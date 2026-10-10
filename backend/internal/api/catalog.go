@@ -23,6 +23,7 @@ import (
 	"inventarius/internal/auth"
 	"inventarius/internal/codes"
 	"inventarius/internal/db"
+	"inventarius/internal/search"
 )
 
 // ---- locations ----
@@ -280,34 +281,65 @@ func (s *Server) deleteCategory(w http.ResponseWriter, r *http.Request, u *auth.
 // findItems matches items whose name, part number, maker, package or
 // description contain every word of q ("10k 0603"). The database filters on
 // the first word; the others are checked here.
+// kindWords let people search by type in Portuguese or English.
+var kindWords = map[string]string{
+	"consumable": "consumable consumivel componente peca part",
+	"tool":       "tool ferramenta equipamento equipment",
+	"hazmat":     "hazmat hazardous perigoso quimico chemical",
+	"flight_hw":  "flight hardware voo foguete rocket",
+}
+
+// findItems lists items matching q (see package search), best first; with
+// an empty q, all items by name.
 func (s *Server) findItems(ctx context.Context, q string, p db.ListItemSummariesParams) ([]db.ListItemSummariesRow, error) {
-	words := strings.Fields(strings.ToLower(q))
+	query := search.Parse(q)
+	if query.Empty() {
+		return s.store.ListItemSummaries(ctx, p)
+	}
 	want := p.Lim
-	if len(words) > 0 {
-		pattern := "%" + words[0] + "%"
-		p.Q = &pattern
-		p.Lim = 5000
-	}
+	p.Q, p.Lim = nil, 1_000_000
 	rows, err := s.store.ListItemSummaries(ctx, p)
-	if err != nil || len(words) < 2 {
-		return rows, err
+	if err != nil {
+		return nil, err
 	}
-	out := rows[:0]
-	for _, it := range rows {
-		text := strings.ToLower(strings.Join([]string{it.Name, it.Mpn, it.Manufacturer, it.Package, it.Description}, " "))
-		match := true
-		for _, w := range words[1:] {
-			if !strings.Contains(text, w) {
-				match = false
+	cats, err := s.store.ListCategories(ctx)
+	if err != nil {
+		return nil, err
+	}
+	catName := map[int64]db.Category{}
+	for _, c := range cats {
+		catName[c.ID] = c
+	}
+	catPath := func(id *int64) string {
+		var parts []string
+		for d := 0; id != nil && d < 16; d++ {
+			c, ok := catName[*id]
+			if !ok {
 				break
 			}
+			parts = append(parts, c.Name)
+			id = c.ParentID
 		}
-		if match {
-			out = append(out, it)
-			if int64(len(out)) == want {
-				break
-			}
+		return strings.Join(parts, " ")
+	}
+	docs := make([]search.Doc, len(rows))
+	for i, it := range rows {
+		docs[i] = search.NewDoc(
+			search.Field{Text: it.Name, Weight: 3},
+			search.Field{Text: it.Package + " " + it.Mpn, Weight: 2},
+			search.Field{Text: catPath(it.CategoryID), Weight: 1.5},
+			search.Field{Text: it.Manufacturer, Weight: 1},
+			search.Field{Text: kindWords[it.Kind], Weight: 0.8},
+			search.Field{Text: it.Description, Weight: 0.5},
+		)
+	}
+	ranked := search.Rank(query, docs)
+	out := make([]db.ListItemSummariesRow, 0, min(len(ranked), int(want)))
+	for _, i := range ranked {
+		if int64(len(out)) == want {
+			break
 		}
+		out = append(out, rows[i])
 	}
 	return out, nil
 }
@@ -562,12 +594,35 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request, u *auth.User) er
 	if err != nil {
 		return err
 	}
-	var matched []db.Location
-	lq := strings.ToLower(q)
+	// Places match on their own name, and less on the names of what they
+	// are inside ("caixa 1 gaveta 5").
+	byID := map[int64]db.Location{}
 	for _, l := range locs {
-		if strings.Contains(strings.ToLower(l.Name), lq) && len(matched) < 10 {
-			matched = append(matched, l)
+		byID[l.ID] = l
+	}
+	docs := make([]search.Doc, len(locs))
+	for i, l := range locs {
+		var parents []string
+		for p, d := l.ParentID, 0; p != nil && d < 32; d++ {
+			pl, ok := byID[*p]
+			if !ok {
+				break
+			}
+			parents = append(parents, pl.Name)
+			p = pl.ParentID
 		}
+		docs[i] = search.NewDoc(
+			search.Field{Text: l.Name, Weight: 3},
+			search.Field{Text: strings.Join(parents, " "), Weight: 1},
+			search.Field{Text: l.Description, Weight: 0.5},
+		)
+	}
+	var matched []db.Location
+	for _, i := range search.Rank(search.Parse(q), docs) {
+		if len(matched) == 10 {
+			break
+		}
+		matched = append(matched, locs[i])
 	}
 	out["locations"] = nonNil(matched)
 	return writeJSON(w, out)

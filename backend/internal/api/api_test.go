@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -470,5 +471,55 @@ func TestImportMessySpreadsheetData(t *testing.T) {
 		if len(r.Errors) == 0 {
 			t.Errorf("bad row %d accepted", i)
 		}
+	}
+}
+
+func TestSearchWithoutAccentsOrSymbols(t *testing.T) {
+	e := newEnv(t)
+	admin := e.login("ana@portospaceteam.pt")
+	var cat db.Category
+	admin.do("POST", "/api/categories", map[string]any{"name": "Resistências"}, 200, &cat)
+	for _, it := range []map[string]any{
+		{"name": "Resistência 10k Ω", "kind": "consumable", "package": "0603", "category_id": cat.ID},
+		{"name": "Resistência 10 Ω", "kind": "consumable", "package": "0402", "category_id": cat.ID},
+		{"name": "Condensador 100 nF", "kind": "consumable", "package": "0402"},
+	} {
+		admin.do("POST", "/api/items", it, 200, nil)
+	}
+	var loc db.Location
+	admin.do("POST", "/api/locations", map[string]any{"name": "Recuperação & Payload"}, 200, &loc)
+
+	names := func(q string) []string {
+		var items []db.ListItemSummariesRow
+		admin.do("GET", "/api/items?q="+url.QueryEscape(q), nil, 200, &items)
+		var out []string
+		for _, it := range items {
+			out = append(out, it.Name+"/"+it.Package)
+		}
+		return out
+	}
+	for q, want := range map[string]string{
+		"resistencia":      "Resistência 10 Ω/0402",
+		"resistencias":     "Resistência 10 Ω/0402",
+		"10 ohm":           "Resistência 10 Ω/0402",
+		"10kohm":           "Resistência 10k Ω/0603",
+		"resistencia 0603": "Resistência 10k Ω/0603",
+		"100nf":            "Condensador 100 nF/0402",
+	} {
+		got := names(q)
+		if len(got) == 0 || got[0] != want {
+			t.Errorf("search %q = %v, want %q first", q, got, want)
+		}
+	}
+	if got := names("resistencias"); len(got) != 2 {
+		t.Errorf("resistencias = %v, want both resistors", got)
+	}
+
+	var res struct {
+		Locations []db.Location `json:"locations"`
+	}
+	admin.do("GET", "/api/search?q=recuperacao", nil, 200, &res)
+	if len(res.Locations) != 1 || res.Locations[0].ID != loc.ID {
+		t.Fatalf("place search: %+v", res.Locations)
 	}
 }

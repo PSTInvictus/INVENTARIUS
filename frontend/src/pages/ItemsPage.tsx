@@ -42,11 +42,20 @@ export function ItemsPage() {
   const kind = (params.get("kind") as ItemKind) || "";
   const category = params.get("category") ? Number(params.get("category")) : null;
   const [q, setQ] = useState(params.get("q") ?? "");
-  const query = useDeferredValue(q.trim().toLowerCase());
+  const query = useDeferredValue(q.trim());
   const [limit, setLimit] = useState(150);
   const navigate = useNavigate();
   const { data: meta } = useMeta();
   const items = useAllItems();
+  // Text search runs on the server (accents, plurals, "ohm" for Ω), ranked
+  // best first; the other filters apply on top of it here.
+  const searched = useQuery({
+    queryKey: ["items", "search", query],
+    queryFn: () => get<ItemSummary[]>(`/api/items?limit=5000&q=${encodeURIComponent(query)}`),
+    enabled: query !== "",
+    placeholderData: (prev) => prev,
+  });
+  const base = query ? searched.data : items.data;
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => get<Category[]>("/api/categories") });
   const catPaths = useMemo(() => categoryPaths(cats.data), [cats.data]);
 
@@ -75,20 +84,15 @@ export function ItemsPage() {
   }, [category, cats.data]);
 
   const filtered = useMemo(() => {
-    const words = query.split(/\s+/).filter(Boolean);
-    return (items.data ?? []).filter((it) => {
+    return (base ?? []).filter((it) => {
       if (kind && it.kind !== kind) return false;
       if (inCategory && (it.category_id === null || !inCategory.has(it.category_id))) return false;
       if (show === "low" && !isLow(it)) return false;
       if (show === "reserved" && !(it.reserved_quantity > 0 || it.reserved_assets > 0)) return false;
       if (show === "uncounted" && it.uncounted_lots === 0) return false;
-      if (words.length) {
-        const text = `${it.name} ${it.package} ${it.mpn} ${it.manufacturer} ${it.description}`.toLowerCase();
-        if (!words.every((w) => text.includes(w))) return false;
-      }
       return true;
     });
-  }, [items.data, query, kind, inCategory, show]);
+  }, [base, kind, inCategory, show]);
 
   const topCategories = (cats.data ?? [])
     .filter((c) => c.parent_id === null)
@@ -188,8 +192,8 @@ export function ItemsPage() {
         </div>
       )}
 
-      <ErrorBox error={items.error} />
-      {items.isPending ? (
+      <ErrorBox error={items.error ?? searched.error} />
+      {!base ? (
         <Loading rows={8} />
       ) : filtered.length === 0 ? (
         <Card>
