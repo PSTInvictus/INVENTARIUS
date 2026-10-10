@@ -1,0 +1,20 @@
+# Streams every change of the database to a backup within seconds.
+# Default: a directory on another disk (BACKUP_DIR in .env, e.g. a USB drive).
+# For an off-site copy, swap the replica for S3-compatible storage, e.g.
+# Cloudflare R2 (free tier) — fill in the LITESTREAM_* variables in .env:
+#
+#    replica:
+#      type: s3
+#      bucket: inventarius-backup
+#      path: db
+#      endpoint: https://<account id>.r2.cloudflarestorage.com
+#      region: auto
+#
+# Restore: see docs/backup.md.
+
+dbs:
+  - path: /data/inventarius.db
+    replica:
+      type: file
+      path: /backup/inventarius
+      retention: 720h

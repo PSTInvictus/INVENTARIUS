@@ -1,0 +1,8 @@
+node_modules/
+frontend/dist/
+backend/bin/
+backend/data/
+backend/internal/web/dist/*
+!backend/internal/web/dist/.gitkeep
+deploy/.env
+deploy/backup/

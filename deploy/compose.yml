@@ -1,0 +1,52 @@
+# Production stack for the room PC (Ubuntu). From this directory:
+#   cp env.example .env   # then fill it in
+#   docker compose up -d --build
+#   docker compose --profile tunnel up -d    # also publish via Cloudflare Tunnel
+
+services:
+  inventarius:
+    build: ..
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      INVENTARIUS_PRINTER: ${INVENTARIUS_PRINTER:-/dev/usb/lp0}
+    volumes:
+      - data:/data
+    # The PT-E550W over USB. If it is unplugged when the stack starts, compose
+    # refuses to start; set INVENTARIUS_PRINTER= and remove this to run without it.
+    devices:
+      - ${PRINTER_DEVICE:-/dev/usb/lp0}:${PRINTER_DEVICE:-/dev/usb/lp0}
+    # The device belongs to the "lp" group (gid 7 on Ubuntu).
+    group_add:
+      - "7"
+    ports:
+      # Only on this PC; everyone else comes through the tunnel.
+      - "127.0.0.1:8080:8080"
+
+  # Continuous SQLite backup. See litestream.yml.
+  litestream:
+    image: litestream/litestream:0.5.17
+    restart: unless-stopped
+    command: replicate -config /etc/litestream.yml
+    env_file: .env
+    volumes:
+      - data:/data
+      - ./litestream.yml:/etc/litestream.yml:ro
+      - ${BACKUP_DIR:-./backup}:/backup
+    depends_on:
+      - inventarius
+
+  # Publishes the app at https://<your hostname> without opening ports:
+  # eduroam blocks incoming connections, the tunnel only connects outward.
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.0
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - inventarius
+
+volumes:
+  data:

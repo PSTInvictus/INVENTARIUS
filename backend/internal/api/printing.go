@@ -1,0 +1,175 @@
+package api
+
+import (
+	"context"
+	"image"
+	"image/png"
+	"log/slog"
+	"net/http"
+	"strings"
+
+	"inventarius/internal/auth"
+	"inventarius/internal/codes"
+	"inventarius/internal/db"
+	"inventarius/internal/labels"
+)
+
+// RenderJob turns a stored print job into a label image; the print queue
+// calls it right before printing.
+func (s *Server) RenderJob(j db.PrintJob) (image.Image, error) {
+	sym, err := labels.ParseSymbology(j.Symbology)
+	if err != nil {
+		return nil, err
+	}
+	img, err := labels.Render(labels.Spec{Code: j.Code, Caption: j.Caption, Symbology: sym, URL: s.labelURL(j.Code)})
+	if err != nil {
+		return nil, err
+	}
+	if s.cfg.PrintFlip {
+		return rotate180(img), nil
+	}
+	return img, nil
+}
+
+func rotate180(img *image.Gray) *image.Gray {
+	b := img.Bounds()
+	out := image.NewGray(b)
+	for y := 0; y < b.Dy(); y++ {
+		for x := 0; x < b.Dx(); x++ {
+			out.Pix[(b.Dy()-1-y)*out.Stride+(b.Dx()-1-x)] = img.Pix[y*img.Stride+x]
+		}
+	}
+	return out
+}
+
+// enqueueLabel queues the default label for something just created. A
+// failure is logged, not returned: the thing exists, and the label can be
+// printed again from its page.
+func (s *Server) enqueueLabel(ctx context.Context, u *auth.User, k codes.Kind, id int64, caption string) {
+	_, err := s.queue.Enqueue(ctx, u.ID, []db.CreatePrintJobParams{{
+		Code: codes.Format(k, id), Symbology: s.cfg.Symbology, Caption: s.defaultCaption(k, caption),
+	}})
+	if err != nil {
+		slog.Error("enqueue label", "code", codes.Format(k, id), "err", err)
+	}
+}
+
+// defaultCaption: only locations get a name on the label by default; on
+// assets and stock the code alone keeps the label at ~8 mm.
+func (s *Server) defaultCaption(k codes.Kind, name string) string {
+	if k == codes.Location {
+		return name
+	}
+	return ""
+}
+
+// labelPreview renders GET /api/labels/A107?symbology=qr&caption=... as a PNG
+// of the label on its tape, at printer resolution (180 dpi).
+func (s *Server) labelPreview(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	k, id, err := codes.Parse(r.PathValue("code"))
+	if err != nil {
+		return badRequest(err.Error())
+	}
+	symName := r.URL.Query().Get("symbology")
+	if symName == "" {
+		symName = s.cfg.Symbology
+	}
+	sym, err := labels.ParseSymbology(symName)
+	if err != nil {
+		return badRequest(err.Error())
+	}
+	code := codes.Format(k, id)
+	img, err := labels.Render(labels.Spec{Code: code, Caption: r.URL.Query().Get("caption"), Symbology: sym, URL: s.labelURL(code)})
+	if err != nil {
+		return badRequest(err.Error())
+	}
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Cache-Control", "private, max-age=300")
+	return png.Encode(w, labels.Preview(img))
+}
+
+func (s *Server) print(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	var b struct {
+		Labels []struct {
+			Code      string `json:"code"`
+			Symbology string `json:"symbology"`
+			Caption   string `json:"caption"`
+		} `json:"labels"`
+	}
+	if err := decode(r, &b); err != nil {
+		return err
+	}
+	if len(b.Labels) == 0 || len(b.Labels) > 200 {
+		return badRequest("send between 1 and 200 labels")
+	}
+	var jobs []db.CreatePrintJobParams
+	for _, l := range b.Labels {
+		k, id, err := codes.Parse(l.Code)
+		if err != nil {
+			return badRequest(err.Error())
+		}
+		if _, err := s.codePath(r.Context(), k, id); err != nil {
+			return badRequest("no " + k.Name() + " with code " + codes.Format(k, id))
+		}
+		if l.Symbology == "" {
+			l.Symbology = s.cfg.Symbology
+		}
+		if _, err := labels.ParseSymbology(l.Symbology); err != nil {
+			return badRequest(err.Error())
+		}
+		jobs = append(jobs, db.CreatePrintJobParams{
+			Code: codes.Format(k, id), Symbology: l.Symbology, Caption: strings.TrimSpace(l.Caption),
+		})
+	}
+	out, err := s.queue.Enqueue(r.Context(), u.ID, jobs)
+	if err != nil {
+		return err
+	}
+	return writeJSON(w, out)
+}
+
+func (s *Server) listPrintJobs(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	jobs, err := s.store.ListPrintJobs(r.Context(), limit(r, 100, 500))
+	if err != nil {
+		return err
+	}
+	return writeJSON(w, nonNil(jobs))
+}
+
+func (s *Server) printJobOp(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	id, err := pathID(r)
+	if err != nil {
+		return err
+	}
+	j, err := s.store.GetPrintJob(r.Context(), id)
+	if err != nil {
+		return err
+	}
+	var status string
+	switch r.PathValue("op") {
+	case "retry":
+		if j.Status != "failed" && j.Status != "cancelled" && j.Status != "done" {
+			return badRequest("only finished jobs can be retried")
+		}
+		status = "queued"
+	case "cancel":
+		if j.Status != "queued" && j.Status != "failed" {
+			return badRequest("only waiting jobs can be cancelled")
+		}
+		status = "cancelled"
+	default:
+		return errNotFound
+	}
+	if err := s.store.SetPrintJobStatus(r.Context(), db.SetPrintJobStatusParams{Status: status, Error: "", ID: id}); err != nil {
+		return err
+	}
+	if status == "queued" {
+		s.queue.Wake()
+	}
+	w.WriteHeader(http.StatusNoContent)
+	return nil
+}
+
+func (s *Server) printerStatus(w http.ResponseWriter, r *http.Request, u *auth.User) error {
+	return writeJSON(w, s.queue.CheckStatus(r.Context()))
+}

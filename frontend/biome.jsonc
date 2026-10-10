@@ -1,0 +1,22 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": { "includes": ["**", "!dist", "!node_modules"] },
+  "formatter": { "indentStyle": "space", "lineWidth": 110 },
+  "linter": {
+    "rules": {
+      "recommended": true,
+      "a11y": {
+        "noAutofocus": "off",
+        // Our select wrappers render a <select> inside the <label>.
+        "noLabelWithoutControl": {
+          "level": "error",
+          "options": { "inputComponents": ["OrgSelect", "LocationSelect", "AddFields"] }
+        },
+        // Segmented controls are buttons with role="radio" on purpose.
+        "useSemanticElements": "off"
+      }
+    }
+  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } }
+}

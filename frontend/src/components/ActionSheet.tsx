@@ -1,0 +1,248 @@
+import { type FormEvent, useState } from "react";
+import { ApiError, type CountState, type Reservation } from "../api";
+import { errorMessage, forLabel, loadPurpose, qty, savePurpose, useMe, useMeta } from "../lib";
+import { LocationSelect, OrgSelect, ownerValue, parseOwnerValue } from "./pickers";
+import { ErrorBox, Sheet } from "./ui";
+
+export interface ActionValues {
+  quantity: number;
+  project_id: number | null;
+  department_id: number | null;
+  to_location_id: number | null;
+  due_at: string | null;
+  until: string | null;
+  note: string;
+  reservation_id: number | null;
+  count_state: CountState;
+  /** Set after the user confirmed using things reserved for someone else. */
+  override_reserved: boolean;
+}
+
+/**
+ * One form for every stock/asset action. Fields appear as needed:
+ * quantity, who it is for, a destination, a due time and a note.
+ * If the server answers 409 (it is reserved for someone else), it asks the
+ * user and resubmits with override_reserved.
+ */
+export function ActionSheet(props: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  submitLabel: string;
+  unit?: string;
+  max?: number;
+  defaultQuantity?: number;
+  askQuantity?: boolean;
+  /** For stock counts, where 0 is a valid answer. */
+  allowZero?: boolean;
+  /** Ask how well it was counted (exact / estimate / not counted). */
+  askCountState?: boolean;
+  defaultCountState?: CountState;
+  askPurpose?: boolean;
+  askLocation?: "required" | "optional";
+  excludeLocation?: number;
+  askDue?: boolean;
+  /** Ask for an optional end date (reservations). */
+  askUntil?: boolean;
+  /** Free (unreserved) quantity, shown next to the quantity. */
+  free?: number;
+  /** Offer taking from one of these reservations instead of free stock. */
+  reservations?: Reservation[];
+  noteLabel?: string;
+  noteRequired?: boolean;
+  subtitle?: string;
+  danger?: boolean;
+  onSubmit: (v: ActionValues) => Promise<unknown>;
+}) {
+  const { data: me } = useMe();
+  const [quantity, setQuantity] = useState(String(props.defaultQuantity ?? 1));
+  const [purpose, setPurpose] = useState(() => {
+    const p = loadPurpose(me);
+    return ownerValue(p.project_id, p.department_id);
+  });
+  const { data: meta } = useMeta();
+  const [location, setLocation] = useState<number | null>(null);
+  const [due, setDue] = useState("");
+  const [until, setUntil] = useState("");
+  const [countState, setCountState] = useState<CountState>(props.defaultCountState ?? "exact");
+  const showQuantity = props.askQuantity !== false && countState !== "uncounted";
+  // Preselect a reservation made for the department this person usually works for.
+  const [reservation, setReservation] = useState<string>(() => {
+    const p = loadPurpose(me);
+    const mine = props.reservations?.find(
+      (r) => (p.department_id && r.department_id === p.department_id) || r.user_id === me?.id,
+    );
+    return mine ? String(mine.id) : "";
+  });
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    const q = Number(quantity.replace(",", "."));
+    if (showQuantity && !(q > 0) && !(props.allowZero && q === 0)) {
+      setError(props.allowZero ? "Enter the number you counted." : "Enter a quantity greater than zero.");
+      return;
+    }
+    const p = parseOwnerValue(purpose);
+    if (props.askPurpose) savePurpose(p);
+    if (props.noteRequired && !note.trim()) {
+      setError("Say what it is for.");
+      return;
+    }
+    const values: ActionValues = {
+      quantity: q,
+      ...(reservation ? { project_id: null, department_id: null } : p),
+      to_location_id: location,
+      due_at: due ? new Date(due).toISOString() : null,
+      until: until || null,
+      note,
+      reservation_id: reservation ? Number(reservation) : null,
+      count_state: countState,
+      override_reserved: false,
+    };
+    setBusy(true);
+    try {
+      try {
+        await props.onSubmit(values);
+      } catch (err) {
+        if (!(err instanceof ApiError && err.status === 409)) throw err;
+        if (!confirm(`${err.message}\n\nUse it anyway?`)) return;
+        await props.onSubmit({ ...values, override_reserved: true });
+      }
+      props.onClose();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Sheet open={props.open} onClose={props.onClose} title={props.title} subtitle={props.subtitle}>
+      <form onSubmit={submit} className="form">
+        {props.askCountState && <CountStatePicker value={countState} onChange={setCountState} />}
+        {showQuantity && (
+          <label className="field">
+            <span>
+              Quantity{props.unit && props.unit !== "pcs" ? ` (${props.unit})` : ""}
+              {props.max !== undefined && <span className="muted"> · {props.max} here</span>}
+              {props.free !== undefined && props.free !== props.max && (
+                <span className="muted"> · {qty(Math.max(props.free, 0))} free</span>
+              )}
+            </span>
+            <div className="stepper">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setQuantity(String(Math.max(0, Number(quantity) - 1)))}
+              >
+                −
+              </button>
+              <input
+                inputMode="decimal"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                autoFocus
+              />
+              <button type="button" className="btn" onClick={() => setQuantity(String(Number(quantity) + 1))}>
+                +
+              </button>
+            </div>
+          </label>
+        )}
+        {props.reservations && props.reservations.length > 0 && (
+          <label className="field">
+            <span>Take from</span>
+            <select value={reservation} onChange={(e) => setReservation(e.target.value)}>
+              <option value="">
+                Free stock{props.free !== undefined && ` (${qty(Math.max(props.free, 0))})`}
+              </option>
+              {props.reservations.map((r) => (
+                <option key={r.id} value={r.id}>
+                  Reserved for {forLabel(meta, r.project_id, r.department_id) || "the team"} (
+                  {qty(r.quantity)}) — {r.note}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {props.askPurpose && !reservation && (
+          <label className="field">
+            <span>For</span>
+            <OrgSelect value={purpose} onChange={setPurpose} noneLabel="General / team" />
+          </label>
+        )}
+        {props.askLocation && (
+          <label className="field">
+            <span>{props.askLocation === "required" ? "To" : "Put it in (optional)"}</span>
+            <LocationSelect
+              value={location}
+              onChange={setLocation}
+              exclude={props.excludeLocation}
+              required={props.askLocation === "required"}
+              emptyLabel={props.askLocation === "required" ? "Choose a location…" : "Where it was before"}
+            />
+          </label>
+        )}
+        {props.askDue && (
+          <label className="field">
+            <span>Bring it back by (optional)</span>
+            <input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} />
+          </label>
+        )}
+        {props.askUntil && (
+          <label className="field">
+            <span>Until (optional)</span>
+            <input type="date" value={until} onChange={(e) => setUntil(e.target.value)} />
+          </label>
+        )}
+        <label className="field">
+          <span>{props.noteLabel ?? "Note (optional)"}</span>
+          <input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="e.g. avionics board rev B"
+          />
+        </label>
+        <ErrorBox error={error} />
+        <button
+          type="submit"
+          className={`btn btn-lg btn-block ${props.danger ? "btn-danger solid" : "btn-primary"}`}
+          disabled={busy}
+        >
+          {busy ? "Saving…" : props.submitLabel}
+        </button>
+      </form>
+    </Sheet>
+  );
+}
+
+const countStates: [CountState, string][] = [
+  ["exact", "Exact"],
+  ["approx", "About"],
+  ["uncounted", "Lots (not counted)"],
+];
+
+/** Exact count, an estimate, or "plenty, not counted" (screws, nuts). */
+export function CountStatePicker(props: { value: CountState; onChange: (v: CountState) => void }) {
+  return (
+    <div className="segmented" role="radiogroup" aria-label="How well is it counted?">
+      {countStates.map(([v, label]) => (
+        <button
+          key={v}
+          type="button"
+          role="radio"
+          aria-checked={props.value === v}
+          className={props.value === v ? "on" : ""}
+          onClick={() => props.onChange(v)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}

@@ -1,0 +1,7 @@
+**/node_modules
+frontend/dist
+backend/data
+backend/internal/web/dist/*
+!backend/internal/web/dist/.gitkeep
+.git
+deploy/.env
