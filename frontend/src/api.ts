@@ -35,6 +35,21 @@ export interface Meta {
   departments: Department[];
   symbology: Symbology;
   label_url: string;
+  /** Whether GET /api/parts (Mouser lookup) is set up on the server. */
+  part_lookup: boolean;
+}
+
+/** What the distributor's catalogue knows about a part (GET /api/parts). */
+export interface PartInfo {
+  mpn: string;
+  manufacturer: string;
+  description: string;
+  category: string;
+  package: string;
+  datasheet_url: string;
+  product_url: string;
+  image_url: string;
+  supplier_part: string;
 }
 
 export interface Owned {

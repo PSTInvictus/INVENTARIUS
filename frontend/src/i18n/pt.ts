@@ -196,6 +196,13 @@ export const pt: Dict = {
       hazmat: "Contado como peças, com notas de perigo e armazenamento.",
       flight_hw: "Hardware do foguete, registado unidade a unidade.",
     },
+    fromBag: (mpn: string) =>
+      `Preenchido a partir da etiqueta do saco de ${mpn}. Dá-lhe um nome claro (o que é, o valor), confirma o tipo e a categoria, e escolhe onde fica.`,
+    lookUp: "Preencher a partir da Mouser",
+    lookingUp: "A procurar na Mouser…",
+    lookedUp: "Preenchido a partir da Mouser: nome, datasheet, página do produto, foto. Confirma.",
+    lookupNotFound: "A Mouser não conhece esta referência.",
+    lookupHint: "Escreve a referência para preencher o resto a partir da Mouser.",
     basics: "Básico",
     basicsHint: "O que é e a quem pertence.",
     namePh: "ex.: Breakout do sensor de pressão BMP390",
