@@ -43,8 +43,12 @@ func (s *Server) partLookup(w http.ResponseWriter, r *http.Request, u *auth.User
 		CategoryID *int64 `json:"category_id"`
 		// ...otherwise a name for a new one ("Condensadores"), or "".
 		NewCategory string `json:"new_category"`
+		// Short text for labels ("Capacitors 1uF 0402").
+		LabelText string `json:"label_text"`
 	}{Part: p}
-	if g := parts.GroupOf(p.Category); g != nil {
+	g := parts.GroupOf(p.Category)
+	out.LabelText = parts.ShortLabel(p, g)
+	if g != nil {
 		cats, err := s.store.ListCategories(r.Context())
 		if err != nil {
 			return err

@@ -152,3 +152,73 @@ func containsWord(s, w string) bool {
 }
 
 func isLetter(b byte) bool { return b >= 'a' && b <= 'z' }
+
+// Values in descriptions, e.g. "X6S, 1uF, +/-10%, 16v, 0402" or
+// "Chip Resistor 0603, 10kOhms, 1%, 1/10W".
+var (
+	capValue = regexp.MustCompile(`(?i)\b(\d+(?:\.\d+)?)\s*([pnuµμm]?)F\b`)
+	resValue = regexp.MustCompile(`(?i)\b(\d+(?:\.\d+)?)\s*([kKmM]?)\s*(?:ohms?|Ω)`)
+	indValue = regexp.MustCompile(`(?i)\b(\d+(?:\.\d+)?)\s*([nuµμm]?)H\b`)
+	ledColor = regexp.MustCompile(`(?i)\b(red|green|blue|yellow|white|orange|amber|pink|purple|rgb|ir|infrared|uv)\b`)
+)
+
+// ShortLabel is a short text for labels: what it is, value and package for
+// passives ("Capacitors 1uF 0402", "Resistors 10k 0603"), colour and package
+// for LEDs, and the part number for everything else ("STM32F405RGT6").
+func ShortLabel(p Part, g *Group) string {
+	d := p.Description
+	var words []string
+	add := func(w string) {
+		if w != "" {
+			words = append(words, w)
+		}
+	}
+	name := ""
+	if g != nil {
+		name = g.Name
+	}
+	switch name {
+	case "Condensadores":
+		if m := capValue.FindStringSubmatch(d); m != nil {
+			add("Capacitors")
+			add(m[1] + unitPrefix(m[2]) + "F")
+		}
+	case "Resistências":
+		if m := resValue.FindStringSubmatch(d); m != nil {
+			add("Resistors")
+			switch strings.ToLower(m[2]) {
+			case "k":
+				add(m[1] + "k")
+			case "m":
+				add(m[1] + "M")
+			default:
+				add(m[1] + "R")
+			}
+		}
+	case "Indutores":
+		if m := indValue.FindStringSubmatch(d); m != nil {
+			add("Inductors")
+			add(m[1] + unitPrefix(m[2]) + "H")
+		}
+	case "LEDs":
+		if c := ledColor.FindString(d); c != "" {
+			add("LED " + strings.ToUpper(c[:1]) + strings.ToLower(c[1:]))
+		}
+	}
+	if len(words) == 0 {
+		// Nothing read from the description: the part number says it best.
+		return p.MPN
+	}
+	add(p.Package)
+	return strings.Join(words, " ")
+}
+
+func unitPrefix(s string) string {
+	switch s {
+	case "µ", "μ", "U":
+		return "u"
+	case "P", "N":
+		return strings.ToLower(s)
+	}
+	return s
+}

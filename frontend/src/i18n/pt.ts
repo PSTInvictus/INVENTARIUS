@@ -217,6 +217,9 @@ export const pt: Dict = {
     mpn: "Referência do fabricante (MPN)",
     packageFootprint: "Encapsulamento / footprint",
     packagePh: "ex.: 0603, SOT-23, TO-220",
+    labelText: "Texto da etiqueta",
+    labelTextPh: "Texto curto para as etiquetas",
+    labelTextHint: "Impresso nas etiquetas em vez do nome, ex.: “Capacitors 1uF 0402”. Vazio imprime o nome.",
     stock: "Stock",
     stockHint: "Como se conta e quando avisar.",
     warnBelow: "Avisar abaixo de",
@@ -462,6 +465,7 @@ export const pt: Dict = {
       ["owner", "Vazio (equipa), INVICTUS, ou ICARUS/Telemetry."],
       ["status", "Para ferramentas: available ou broken."],
       ["reserved, reserved_note", "Um número ou “all”, e para que é."],
+      ["label", "Texto curto para as etiquetas, ex.: 1uF 0402."],
       [
         "unit, min_stock, lot, expires_on, serial, description, datasheet_url, supplier_url",
         "Extras opcionais.",

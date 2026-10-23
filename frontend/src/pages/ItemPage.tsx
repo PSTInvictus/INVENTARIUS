@@ -383,7 +383,7 @@ export function ItemPage() {
             <p className="small muted" style={{ padding: "0.85rem 1.1rem 0" }}>
               {units ? t.item.labelHintUnits : t.item.labelHintStock}
             </p>
-            <LabelCard code={`I${item.id}`} caption={item.name} bare />
+            <LabelCard code={`I${item.id}`} caption={item.label_text || item.name} bare />
           </Card>
         </div>
       </div>

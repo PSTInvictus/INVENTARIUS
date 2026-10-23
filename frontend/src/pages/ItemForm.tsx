@@ -94,6 +94,7 @@ function ItemForm({
     manufacturer: item?.manufacturer ?? prefill?.manufacturer ?? "",
     mpn: item?.mpn ?? prefill?.mpn ?? "",
     package: item?.package ?? "",
+    label_text: item?.label_text ?? "",
     supplier_url: item?.supplier_url ?? prefill?.supplier_url ?? "",
     datasheet_url: item?.datasheet_url ?? "",
     unit: item?.unit ?? "pcs",
@@ -136,6 +137,7 @@ function ItemForm({
         mpn: x.mpn || p.mpn,
         manufacturer: x.manufacturer || p.manufacturer,
         package: x.package || p.package,
+        label_text: x.label_text || p.label_text,
         datasheet_url: x.datasheet_url || p.datasheet_url,
         supplier_url: searchLink(x.supplier_url) && p.product_url ? p.product_url : x.supplier_url,
         description:
@@ -282,6 +284,15 @@ function ItemForm({
               placeholder={t.form.namePh}
               autoFocus={!item}
             />
+          </label>
+          <label className="field">
+            <span>{t.form.labelText}</span>
+            <input
+              value={f.label_text}
+              onChange={(e) => set("label_text", e.target.value)}
+              placeholder={f.name || t.form.labelTextPh}
+            />
+            <span className="field-hint">{t.form.labelTextHint}</span>
           </label>
           <div className="field">
             <span className="field-label">{t.common.type}</span>

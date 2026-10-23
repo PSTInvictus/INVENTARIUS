@@ -214,6 +214,10 @@ export const en = {
     mpn: "Part number (MPN)",
     packageFootprint: "Package / footprint",
     packagePh: "e.g. 0603, SOT-23, TO-220",
+    labelText: "Label text",
+    labelTextPh: "Short text for labels",
+    labelTextHint:
+      "Printed on labels instead of the name, e.g. “Capacitors 1uF 0402”. Empty prints the name.",
     stock: "Stock",
     stockHint: "How it's counted and when to warn.",
     warnBelow: "Warn when below",
@@ -455,6 +459,7 @@ export const en = {
       ["owner", "Empty (team), INVICTUS, or ICARUS/Telemetry."],
       ["status", "For tools: available or broken."],
       ["reserved, reserved_note", "A number or “all”, and what it's for."],
+      ["label", "Short text for labels, e.g. 1uF 0402."],
       [
         "unit, min_stock, lot, expires_on, serial, description, datasheet_url, supplier_url",
         "Optional extras.",

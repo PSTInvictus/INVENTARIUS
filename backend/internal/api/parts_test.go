@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"net/url"
+	"strconv"
 	"testing"
 
 	"inventarius/internal/db"
@@ -52,5 +53,30 @@ func TestMatchCategory(t *testing.T) {
 	}
 	if id, name := matchCategory(cats[:1], g); id != nil || name != "Condensadores" {
 		t.Fatalf("matchCategory = %v, %q; want a new Condensadores", id, name)
+	}
+}
+
+func TestItemLabelText(t *testing.T) {
+	e := newEnv(t)
+	c := e.login("ana@portospaceteam.pt")
+	var it db.Item
+	c.do("POST", "/api/items", map[string]any{
+		"name": "Multilayer Ceramic Capacitors MLCC - SMD/SMT X6S, 1uF, +/-10%, 16v, 0402", "kind": "consumable",
+		"mpn": "CL05X105KO5NQWC", "label_text": " 1uF 0402 ",
+	}, http.StatusOK, &it)
+	if it.LabelText != "1uF 0402" {
+		t.Fatalf("label_text = %q", it.LabelText)
+	}
+	c.do("PATCH", "/api/items/"+strconv.FormatInt(it.ID, 10), map[string]any{
+		"name": it.Name, "kind": "consumable", "label_text": "1uF X6S 0402",
+	}, http.StatusOK, &it)
+	if it.LabelText != "1uF X6S 0402" {
+		t.Fatalf("label_text after update = %q", it.LabelText)
+	}
+	// The label text is searchable too.
+	var found []db.Item
+	c.do("GET", "/api/items?q=1uF%200402", nil, http.StatusOK, &found)
+	if len(found) != 1 || found[0].ID != it.ID {
+		t.Fatalf("search found %+v", found)
 	}
 }

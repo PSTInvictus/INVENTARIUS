@@ -326,7 +326,7 @@ func (s *Server) findItems(ctx context.Context, q string, p db.ListItemSummaries
 	for i, it := range rows {
 		docs[i] = search.NewDoc(
 			search.Field{Text: it.Name, Weight: 3},
-			search.Field{Text: it.Package + " " + it.Mpn, Weight: 2},
+			search.Field{Text: it.Package + " " + it.Mpn + " " + it.LabelText, Weight: 2},
 			search.Field{Text: catPath(it.CategoryID), Weight: 1.5},
 			search.Field{Text: it.Manufacturer, Weight: 1},
 			search.Field{Text: kindWords[it.Kind], Weight: 0.8},
@@ -373,6 +373,8 @@ type itemBody struct {
 	HazardClass  string   `json:"hazard_class"`
 	StorageNotes string   `json:"storage_notes"`
 	Package      string   `json:"package"`
+	// Short text for labels; "" prints the name.
+	LabelText string `json:"label_text"`
 	owner
 }
 
@@ -387,6 +389,7 @@ func (b *itemBody) validate() error {
 		return badRequest("kind must be consumable, tool, hazmat or flight_hw")
 	}
 	b.Package = strings.TrimSpace(b.Package)
+	b.LabelText = strings.TrimSpace(b.LabelText)
 	if b.Unit = strings.TrimSpace(b.Unit); b.Unit == "" {
 		b.Unit = "pcs"
 	}
@@ -411,6 +414,7 @@ func (s *Server) createItem(w http.ResponseWriter, r *http.Request, u *auth.User
 		Manufacturer: b.Manufacturer, Mpn: b.Mpn, SupplierUrl: b.SupplierUrl, DatasheetUrl: b.DatasheetUrl,
 		Unit: b.Unit, MinStock: b.MinStock, HazardClass: b.HazardClass, StorageNotes: b.StorageNotes,
 		OwnerProjectID: b.OwnerProjectID, OwnerDepartmentID: b.OwnerDepartmentID, Package: b.Package,
+		LabelText: b.LabelText,
 	})
 	if err != nil {
 		return err
@@ -478,7 +482,8 @@ func (s *Server) updateItem(w http.ResponseWriter, r *http.Request, u *auth.User
 		Name: b.Name, Kind: b.Kind, CategoryID: b.CategoryID, Description: b.Description,
 		Manufacturer: b.Manufacturer, Mpn: b.Mpn, SupplierUrl: b.SupplierUrl, DatasheetUrl: b.DatasheetUrl,
 		Unit: b.Unit, MinStock: b.MinStock, HazardClass: b.HazardClass, StorageNotes: b.StorageNotes,
-		OwnerProjectID: b.OwnerProjectID, OwnerDepartmentID: b.OwnerDepartmentID, Package: b.Package, ID: id,
+		OwnerProjectID: b.OwnerProjectID, OwnerDepartmentID: b.OwnerDepartmentID, Package: b.Package,
+		LabelText: b.LabelText, ID: id,
 	})
 	if err != nil {
 		return err

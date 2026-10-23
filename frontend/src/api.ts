@@ -54,6 +54,8 @@ export interface PartInfo {
   category_id: number | null;
   /** ...otherwise a name for a new one ("Condensadores"), or "". */
   new_category: string;
+  /** Short text for labels ("Capacitors 1uF 0402"). */
+  label_text: string;
 }
 
 export interface Owned {
@@ -92,6 +94,8 @@ export interface Item extends Owned {
   storage_notes: string;
   /** Package / footprint, e.g. "0603". */
   package: string;
+  /** Short text printed on labels instead of the name; "" for the name. */
+  label_text: string;
   created_at: string;
   updated_at: string;
 }

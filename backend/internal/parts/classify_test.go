@@ -57,3 +57,27 @@ func TestGroupOf(t *testing.T) {
 		t.Errorf("GroupOf(enclosures) = %q, want none", g.Name)
 	}
 }
+
+func TestShortLabel(t *testing.T) {
+	for _, tc := range []struct {
+		mpn, category, desc, want string
+	}{
+		{"CL05X105KO5NQWC", "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+			"Multilayer Ceramic Capacitors MLCC - SMD/SMT X6S, 1uF, +/-10%, 16v, 0402", "Capacitors 1uF 0402"},
+		{"RC0603FR-0710KL", "Thick Film Resistors - SMD",
+			"Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 10kOhms, 1%, 1/10W", "Resistors 10k 0603"},
+		{"ERJ-3GEY0R00V", "Thick Film Resistors - SMD", "Thick Film Resistors - SMD 0603 0Ohms Jumper", "Resistors 0R 0603"},
+		{"GRM188R71H104KA93D", "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+			"Multilayer Ceramic Capacitors MLCC - SMD/SMT RECOMMENDED ALT 81-GRM188R72A104KA35", "GRM188R71H104KA93D"},
+		{"LQM21PN100MC0D", "Fixed Inductors", "Fixed Inductors 10uH 20% 0805", "Inductors 10uH 0805"},
+		{"150060RS75000", "Standard LEDs - SMD", "Standard LEDs - SMD WL-SMCW SMD Mono-color Chip LED Red 0603", "LED Red 0603"},
+		{"STM32F405RGT6", "ARM Microcontrollers - MCU", "ARM Microcontrollers - MCU ARM M4 1024 FLASH 168 Mhz 192kB SRAM", "STM32F405RGT6"},
+		{"BSS138", "MOSFETs", "MOSFETs SOT-23 N-CH LOGIC", "BSS138"},
+	} {
+		p := Part{MPN: tc.mpn, Description: tc.desc, Category: tc.category}
+		p.Package = Footprint(p.MPN, p.Description)
+		if got := ShortLabel(p, GroupOf(tc.category)); got != tc.want {
+			t.Errorf("ShortLabel(%s) = %q, want %q", tc.mpn, got, tc.want)
+		}
+	}
+}
