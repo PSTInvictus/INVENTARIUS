@@ -142,6 +142,12 @@ function ItemForm({
           x.description ||
           [p.category, p.supplier_part && `Mouser ${p.supplier_part}`].filter(Boolean).join(" · "),
       }));
+      // The matching category, or the suggested new one in the "new category"
+      // box, unless a category was already chosen.
+      if (f.category_id === null && newCat === null) {
+        if (p.category_id !== null) set("category_id", p.category_id);
+        else if (p.new_category) setNewCat(p.new_category);
+      }
       setPhotoUrl(p.image_url);
       setLookup("done");
     } catch (e) {
@@ -158,30 +164,35 @@ function ItemForm({
     }
   });
 
+  /** Finds or creates the category path "A/B/C" and returns its id. */
+  async function ensureCategory(path: string): Promise<number | null> {
+    let parent: number | null = null;
+    let cats = categories.data ?? [];
+    for (const part of path
+      .split("/")
+      .map((s) => s.trim())
+      .filter(Boolean)) {
+      const found = cats.find((c) => c.parent_id === parent && c.name.toLowerCase() === part.toLowerCase());
+      if (found) {
+        parent = found.id;
+        continue;
+      }
+      const created: Category = await api<Category>("POST", "/api/categories", {
+        name: part,
+        parent_id: parent,
+      });
+      cats = [...cats, created];
+      parent = created.id;
+    }
+    await qc.invalidateQueries({ queryKey: ["categories"] });
+    return parent;
+  }
+
   async function createCategory() {
     const name = newCat?.trim();
     if (!name) return;
     try {
-      let parent: number | null = null;
-      let cats = categories.data ?? [];
-      for (const part of name
-        .split("/")
-        .map((s) => s.trim())
-        .filter(Boolean)) {
-        const found = cats.find((c) => c.parent_id === parent && c.name.toLowerCase() === part.toLowerCase());
-        if (found) {
-          parent = found.id;
-          continue;
-        }
-        const created: Category = await api<Category>("POST", "/api/categories", {
-          name: part,
-          parent_id: parent,
-        });
-        cats = [...cats, created];
-        parent = created.id;
-      }
-      await qc.invalidateQueries({ queryKey: ["categories"] });
-      set("category_id", parent);
+      set("category_id", await ensureCategory(name));
       setNewCat(null);
     } catch (e) {
       setError(e);
@@ -194,6 +205,18 @@ function ItemForm({
     setBusy(true);
     const { owner, ...fields } = f;
     const o = parseOwnerValue(owner);
+    // A category still typed in the "new category" box (e.g. suggested by
+    // the Mouser lookup) is created with the item.
+    if (newCat?.trim()) {
+      try {
+        fields.category_id = await ensureCategory(newCat);
+        setNewCat(null);
+      } catch (err) {
+        setError(err);
+        setBusy(false);
+        return;
+      }
+    }
     const body = {
       ...fields,
       min_stock: f.min_stock === "" ? null : Number(f.min_stock.replace(",", ".")),

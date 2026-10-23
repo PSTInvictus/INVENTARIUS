@@ -197,7 +197,8 @@ export const en = {
       `Filled in from the bag label of ${mpn}. Give it a clear name (what it is, its value), check the type and category, and choose where it goes.`,
     lookUp: "Fill in from Mouser",
     lookingUp: "Looking it up at Mouser…",
-    lookedUp: "Filled in from Mouser: name, datasheet, product page, photo. Check them.",
+    lookedUp:
+      "Filled in from Mouser: name, category, footprint, datasheet, product page, photo, where Mouser has them. Check them.",
     lookupNotFound: "Mouser doesn't know this part number.",
     lookupHint: "Type the part number to fill in the rest from Mouser.",
     basics: "Basics",

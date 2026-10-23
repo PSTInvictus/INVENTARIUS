@@ -200,7 +200,8 @@ export const pt: Dict = {
       `Preenchido a partir da etiqueta do saco de ${mpn}. Dá-lhe um nome claro (o que é, o valor), confirma o tipo e a categoria, e escolhe onde fica.`,
     lookUp: "Preencher a partir da Mouser",
     lookingUp: "A procurar na Mouser…",
-    lookedUp: "Preenchido a partir da Mouser: nome, datasheet, página do produto, foto. Confirma.",
+    lookedUp:
+      "Preenchido a partir da Mouser: nome, categoria, encapsulamento, datasheet, página do produto, foto, quando a Mouser os tem. Confirma.",
     lookupNotFound: "A Mouser não conhece esta referência.",
     lookupHint: "Escreve a referência para preencher o resto a partir da Mouser.",
     basics: "Básico",

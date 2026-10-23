@@ -8,11 +8,14 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
 	"inventarius/internal/auth"
+	"inventarius/internal/db"
 	"inventarius/internal/parts"
+	"inventarius/internal/search"
 )
 
 // partLookup answers GET /api/parts?mpn=GRM188R71H104KA93D with what Mouser's
@@ -34,7 +37,32 @@ func (s *Server) partLookup(w http.ResponseWriter, r *http.Request, u *auth.User
 		}
 		return &httpError{http.StatusBadGateway, err.Error()}
 	}
-	return writeJSON(w, p)
+	out := struct {
+		parts.Part
+		// The team's category for this kind of part, if one exists...
+		CategoryID *int64 `json:"category_id"`
+		// ...otherwise a name for a new one ("Condensadores"), or "".
+		NewCategory string `json:"new_category"`
+	}{Part: p}
+	if g := parts.GroupOf(p.Category); g != nil {
+		cats, err := s.store.ListCategories(r.Context())
+		if err != nil {
+			return err
+		}
+		out.CategoryID, out.NewCategory = matchCategory(cats, g)
+	}
+	return writeJSON(w, out)
+}
+
+// matchCategory finds a category named like g (in Portuguese or English, any
+// level of the tree), or returns g's name to create one.
+func matchCategory(cats []db.Category, g *parts.Group) (*int64, string) {
+	for _, c := range cats {
+		if slices.Contains(g.Names, search.Normalize(strings.TrimSpace(c.Name))) {
+			return &c.ID, ""
+		}
+	}
+	return nil, g.Name
 }
 
 // partImage answers GET /api/parts/image?url=... with a catalogue image, so

@@ -127,6 +127,10 @@ func (m *Mouser) Lookup(ctx context.Context, mpn string) (Part, error) {
 			break
 		}
 	}
+	if part.Package == "" {
+		// The API usually has no package attribute.
+		part.Package = Footprint(part.MPN, part.Description)
+	}
 	return part, nil
 }
 

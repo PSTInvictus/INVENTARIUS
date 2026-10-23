@@ -50,6 +50,10 @@ export interface PartInfo {
   product_url: string;
   image_url: string;
   supplier_part: string;
+  /** The team's category for this kind of part, if one exists... */
+  category_id: number | null;
+  /** ...otherwise a name for a new one ("Condensadores"), or "". */
+  new_category: string;
 }
 
 export interface Owned {
