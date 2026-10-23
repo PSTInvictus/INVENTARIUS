@@ -80,3 +80,24 @@ func TestItemLabelText(t *testing.T) {
 		t.Fatalf("search found %+v", found)
 	}
 }
+
+func TestStockPrintsItemLabel(t *testing.T) {
+	e := newEnv(t)
+	c := e.login("ana@portospaceteam.pt")
+	var loc db.Location
+	c.do("POST", "/api/locations", map[string]any{"name": "Gaveta 6"}, http.StatusOK, &loc)
+	var it db.Item
+	c.do("POST", "/api/items", map[string]any{"name": "Long Mouser name", "kind": "consumable", "label_text": "Capacitors 1uF 0402"}, http.StatusOK, &it)
+	c.do("POST", "/api/stock", map[string]any{"item_id": it.ID, "location_id": loc.ID, "quantity": 30, "print_label": true}, http.StatusOK, nil)
+	var jobs []db.PrintJob
+	c.do("GET", "/api/print/jobs", nil, http.StatusOK, &jobs)
+	if len(jobs) != 1 || jobs[0].Code != "I"+strconv.FormatInt(it.ID, 10) || jobs[0].Caption != "Capacitors 1uF 0402" {
+		t.Fatalf("print jobs = %+v, want one I%d label with the label text", jobs, it.ID)
+	}
+	// Without print_label nothing is printed.
+	c.do("POST", "/api/stock", map[string]any{"item_id": it.ID, "location_id": loc.ID, "quantity": 5}, http.StatusOK, nil)
+	c.do("GET", "/api/print/jobs", nil, http.StatusOK, &jobs)
+	if len(jobs) != 1 {
+		t.Fatalf("%d print jobs, want still 1", len(jobs))
+	}
+}

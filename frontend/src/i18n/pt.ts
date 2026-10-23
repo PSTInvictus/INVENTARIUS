@@ -184,7 +184,7 @@ export const pt: Dict = {
     datasheetLink: "Link da datasheet",
     itemLabel: "Etiqueta do artigo",
     labelHintUnits: "Normalmente etiquetam-se as unidades; esta abre a página do artigo.",
-    labelHintStock: "Normalmente etiquetam-se as gavetas ou o stock; esta abre a página do artigo.",
+    labelHintStock: "Põe-na na gaveta ou no saco: lê-la abre esta página.",
   },
 
   form: {
@@ -569,7 +569,7 @@ export const pt: Dict = {
     expiry: "Data de validade",
     lot: "Lote",
     printUnits: "Imprimir uma etiqueta por unidade",
-    printStock: "Imprimir uma etiqueta para este stock",
+    printStock: "Imprimir a etiqueta do artigo",
     addedPrinted: "Adicionado — etiqueta enviada para a impressora",
     added: "Adicionado",
   },

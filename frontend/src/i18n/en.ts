@@ -181,7 +181,7 @@ export const en = {
     datasheetLink: "Datasheet link",
     itemLabel: "Item label",
     labelHintUnits: "Usually you label the units; this one opens the item page.",
-    labelHintStock: "Usually you label the drawers or stock; this one opens the item page.",
+    labelHintStock: "Put it on the drawer or bag: scanning it opens this page.",
   },
 
   form: {
@@ -563,7 +563,7 @@ export const en = {
     expiry: "Expiry date",
     lot: "Lot / batch",
     printUnits: "Print a label for each unit",
-    printStock: "Print a label for this stock",
+    printStock: "Print the item's label",
     addedPrinted: "Added — label sent to the printer",
     added: "Added",
   },
