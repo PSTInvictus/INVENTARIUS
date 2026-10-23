@@ -345,6 +345,9 @@ export const en = {
     editSubtitle: "Moving it moves everything inside it too.",
     descriptionPh: "e.g. Grey cabinet by the window",
     deletePlace: "Delete place",
+    notEmpty: (places: number, things: number) =>
+      `Empty it first: it still holds ${[places && `${places} ${places === 1 ? "place" : "places"}`, things && `${things} ${things === 1 ? "thing" : "things"}`].filter(Boolean).join(" and ")}.`,
+    deleted: (n: string) => `Deleted ${n}`,
   },
 
   loans: {

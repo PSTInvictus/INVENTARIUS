@@ -349,6 +349,9 @@ export const pt: Dict = {
     editSubtitle: "Movê-lo move também tudo o que está dentro.",
     descriptionPh: "ex.: Armário cinzento junto à janela",
     deletePlace: "Apagar local",
+    notEmpty: (places: number, things: number) =>
+      `Esvazia-o primeiro: ainda tem ${[places && `${places} ${places === 1 ? "local" : "locais"}`, things && `${things} ${things === 1 ? "coisa" : "coisas"}`].filter(Boolean).join(" e ")}.`,
+    deleted: (n: string) => `${n} apagado`,
   },
 
   loans: {
