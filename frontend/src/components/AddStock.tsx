@@ -24,7 +24,8 @@ export const emptyAdd = (location: number | null = null): AddValues => ({
   lot: "",
   expires: "",
   serial: "",
-  print: true,
+  // Labels for stock and units are printed only when asked for.
+  print: false,
   countState: "exact",
 });
 

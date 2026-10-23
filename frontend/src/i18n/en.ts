@@ -401,7 +401,8 @@ export const en = {
     notSetUp: "Not set up on the server",
     recent: "Recent print jobs",
     noneYet: "No labels printed yet",
-    noneHint: "Labels print automatically when you create places, stock and units.",
+    noneHint:
+      "Labels print when you create a place, or when you tick the print box while adding stock or units. Or print them from any page.",
     printAgain: "Print again",
     tryAgain: "Try again",
     reprint: "Reprint",

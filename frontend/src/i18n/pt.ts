@@ -407,7 +407,8 @@ export const pt: Dict = {
     notSetUp: "Não está configurada no servidor",
     recent: "Impressões recentes",
     noneYet: "Ainda não se imprimiram etiquetas",
-    noneHint: "As etiquetas imprimem automaticamente quando crias locais, stock e unidades.",
+    noneHint:
+      "As etiquetas imprimem quando crias um local, ou quando marcas a opção de imprimir ao adicionar stock ou unidades. Ou imprime-as a partir de qualquer página.",
     printAgain: "Imprimir outra vez",
     tryAgain: "Tentar outra vez",
     reprint: "Reimprimir",
