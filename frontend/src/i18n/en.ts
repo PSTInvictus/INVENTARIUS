@@ -417,7 +417,7 @@ export const en = {
 
   label: {
     help: {
-      datamatrix: "Smallest. Scan it with the app.",
+      datamatrix: "Scan it with the app.",
       qr: "Any phone camera opens it.",
       code128: "Barcode. Long, for shelves.",
     },

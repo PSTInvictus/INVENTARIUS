@@ -423,7 +423,7 @@ export const pt: Dict = {
 
   label: {
     help: {
-      datamatrix: "O mais pequeno. Lê-se com a app.",
+      datamatrix: "Lê-se com a app.",
       qr: "Abre com a câmara de qualquer telemóvel.",
       code128: "Código de barras. Comprido, para prateleiras.",
     },
