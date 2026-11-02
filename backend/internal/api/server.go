@@ -32,8 +32,8 @@ type Server struct {
 	inv   *inventory.Service
 	auth  *auth.Auth
 	queue *printqueue.Queue
-	web   fs.FS         // built frontend; nil in tests
-	parts *parts.Mouser // nil without an API key
+	web   fs.FS       // built frontend; nil in tests
+	parts parts.Chain // distributors set up for part lookup; empty for none
 
 	departments []db.Department // static seed data, loaded once
 }
@@ -48,7 +48,10 @@ func New(ctx context.Context, cfg config.Config, store *db.Store, a *auth.Auth, 
 		departments: deps,
 	}
 	if cfg.MouserAPIKey != "" {
-		srv.parts = &parts.Mouser{APIKey: cfg.MouserAPIKey}
+		srv.parts = append(srv.parts, &parts.Mouser{APIKey: cfg.MouserAPIKey})
+	}
+	if cfg.DigiKeyClientID != "" && cfg.DigiKeyClientSecret != "" {
+		srv.parts = append(srv.parts, &parts.DigiKey{ClientID: cfg.DigiKeyClientID, ClientSecret: cfg.DigiKeyClientSecret})
 	}
 	return srv, nil
 }

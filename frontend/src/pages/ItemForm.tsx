@@ -120,17 +120,22 @@ function ItemForm({
   const units = isUnitKind(f.kind);
   const { data: meta } = useMeta();
   const [lookup, setLookup] = useState<"busy" | "done" | "notFound" | ApiError | null>(null);
+  // "Mouser / DigiKey" before a lookup, then the one that answered.
+  const sources = (meta?.part_sources ?? []).join(" / ") || "Mouser";
+  const [answeredBy, setAnsweredBy] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
 
   /**
-   * Fills in what Mouser's catalogue knows about the part number: fields
+   * Fills in what the distributors' catalogues know about the part number: fields
    * still empty (or still the bare part number) get the catalogue's values.
    */
   async function lookUp(mpn: string) {
     if (!mpn.trim()) return;
     setLookup("busy");
     try {
-      const p = await get<PartInfo>(`/api/parts?mpn=${encodeURIComponent(mpn.trim())}`);
+      // A part from a DigiKey bag is looked up at DigiKey first.
+      const prefer = /digikey\./i.test(f.supplier_url) ? "&prefer=digikey" : "";
+      const p = await get<PartInfo>(`/api/parts?mpn=${encodeURIComponent(mpn.trim())}${prefer}`);
       // A search link (from a bag) is worth less than the product page.
       const searchLink = (u: string) => !u || /[?&](q|keywords)=/.test(u);
       setF((x) => ({
@@ -144,7 +149,7 @@ function ItemForm({
         supplier_url: searchLink(x.supplier_url) && p.product_url ? p.product_url : x.supplier_url,
         description:
           x.description ||
-          [p.category, p.supplier_part && `Mouser ${p.supplier_part}`].filter(Boolean).join(" · "),
+          [p.category, p.supplier_part && `${p.supplier} ${p.supplier_part}`].filter(Boolean).join(" · "),
       }));
       // The matching category, or the suggested new one in the "new category"
       // box, unless a category was already chosen.
@@ -153,6 +158,7 @@ function ItemForm({
         else if (p.new_category) setNewCat(p.new_category);
       }
       setPhotoUrl(p.image_url);
+      setAnsweredBy(p.supplier);
       setLookup("done");
     } catch (e) {
       setLookup(e instanceof ApiError && e.status === 404 ? "notFound" : e instanceof ApiError ? e : null);
@@ -210,7 +216,7 @@ function ItemForm({
     const { owner, ...fields } = f;
     const o = parseOwnerValue(owner);
     // A category still typed in the "new category" box (e.g. suggested by
-    // the Mouser lookup) is created with the item.
+    // the part lookup) is created with the item.
     if (newCat?.trim()) {
       try {
         fields.category_id = await ensureCategory(newCat);
@@ -233,7 +239,7 @@ function ItemForm({
         ? await api<Item>("PATCH", `/api/items/${item.id}`, body)
         : await api<Item>("POST", "/api/items", body);
       if (!item && photoUrl) {
-        // Mouser's product photo; the item is fine without it.
+        // The distributor's product photo; the item is fine without it.
         try {
           const img = await fetch(`/api/parts/image?url=${encodeURIComponent(photoUrl)}`);
           if (img.ok) await api("PUT", `/api/items/${saved.id}/photo`, await img.blob());
@@ -388,18 +394,19 @@ function ItemForm({
                 disabled={!f.mpn.trim() || lookup === "busy"}
                 onClick={() => lookUp(f.mpn)}
               >
-                <Download size={14} /> {lookup === "busy" ? t.form.lookingUp : t.form.lookUp}
+                <Download size={14} />{" "}
+                {lookup === "busy" ? t.form.lookingUp(sources) : t.form.lookUp(sources)}
               </button>
               <span className="small muted">
                 {lookup === "done"
-                  ? t.form.lookedUp
+                  ? t.form.lookedUp(answeredBy || sources)
                   : lookup === "notFound"
-                    ? t.form.lookupNotFound
+                    ? t.form.lookupNotFound(sources)
                     : lookup instanceof ApiError
                       ? errorMessage(lookup)
                       : f.mpn.trim()
                         ? ""
-                        : t.form.lookupHint}
+                        : t.form.lookupHint(sources)}
               </span>
             </div>
           )}

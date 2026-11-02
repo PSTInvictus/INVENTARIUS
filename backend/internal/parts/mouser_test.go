@@ -52,6 +52,7 @@ func TestMouserLookup(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := Part{
+		Supplier:     "Mouser",
 		MPN:          "GRM188R71H104KA93D",
 		Manufacturer: "Murata Electronics",
 		Description:  "Multilayer Ceramic Capacitors MLCC - SMD/SMT 0603 50V 0.1uF X7R 10%",

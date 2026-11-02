@@ -25,7 +25,9 @@ func (s *Server) meta(w http.ResponseWriter, r *http.Request, u *auth.User) erro
 		"departments": s.departments,
 		"symbology":   s.cfg.Symbology,
 		"label_url":   s.cfg.LabelURL,
-		"part_lookup": s.parts != nil,
+		"part_lookup": len(s.parts) > 0,
+		// Who the lookup asks, in order: ["Mouser", "DigiKey"].
+		"part_sources": s.parts.Names(),
 	})
 }
 

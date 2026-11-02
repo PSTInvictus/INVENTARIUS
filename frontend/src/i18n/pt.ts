@@ -200,12 +200,12 @@ export const pt: Dict = {
     },
     fromBag: (mpn: string) =>
       `Preenchido a partir da etiqueta do saco de ${mpn}. Dá-lhe um nome claro (o que é, o valor), confirma o tipo e a categoria, e escolhe onde fica.`,
-    lookUp: "Preencher a partir da Mouser",
-    lookingUp: "A procurar na Mouser…",
-    lookedUp:
-      "Preenchido a partir da Mouser: nome, categoria, encapsulamento, datasheet, página do produto, foto, quando a Mouser os tem. Confirma.",
-    lookupNotFound: "A Mouser não conhece esta referência.",
-    lookupHint: "Escreve a referência para preencher o resto a partir da Mouser.",
+    lookUp: (src: string) => `Preencher a partir da ${src}`,
+    lookingUp: (src: string) => `A procurar na ${src}…`,
+    lookedUp: (src: string) =>
+      `Preenchido a partir da ${src}: nome, categoria, encapsulamento, datasheet, página do produto, foto, quando a ${src} os tem. Confirma.`,
+    lookupNotFound: (src: string) => `A ${src} não conhece esta referência.`,
+    lookupHint: (src: string) => `Escreve a referência para preencher o resto a partir da ${src}.`,
     basics: "Básico",
     basicsHint: "O que é e a quem pertence.",
     namePh: "ex.: Breakout do sensor de pressão BMP390",

@@ -51,6 +51,7 @@ describe("formatting", () => {
       symbology: "datamatrix",
       label_url: "",
       part_lookup: false,
+      part_sources: [],
     };
     expect(forLabel(meta, null, 4)).toBe("INVICTUS · Propulsion");
     expect(forLabel(meta, 1, null)).toBe("INVICTUS");
