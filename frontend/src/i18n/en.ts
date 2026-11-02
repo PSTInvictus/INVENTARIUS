@@ -197,12 +197,12 @@ export const en = {
     },
     fromBag: (mpn: string) =>
       `Filled in from the bag label of ${mpn}. Give it a clear name (what it is, its value), check the type and category, and choose where it goes.`,
-    lookUp: "Fill in from Mouser",
-    lookingUp: "Looking it up at Mouser…",
-    lookedUp:
-      "Filled in from Mouser: name, category, footprint, datasheet, product page, photo, where Mouser has them. Check them.",
-    lookupNotFound: "Mouser doesn't know this part number.",
-    lookupHint: "Type the part number to fill in the rest from Mouser.",
+    lookUp: (src: string) => `Fill in from ${src}`,
+    lookingUp: (src: string) => `Looking it up at ${src}…`,
+    lookedUp: (src: string) =>
+      `Filled in from ${src}: name, category, footprint, datasheet, product page, photo, where ${src} has them. Check them.`,
+    lookupNotFound: (src: string) => `${src} doesn't know this part number.`,
+    lookupHint: (src: string) => `Type the part number to fill in the rest from ${src}.`,
     basics: "Basics",
     basicsHint: "What it is and who it belongs to.",
     namePh: "e.g. BMP390 pressure sensor breakout",

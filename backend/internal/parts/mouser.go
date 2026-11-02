@@ -1,12 +1,9 @@
-// Package parts looks up component details (description, datasheet, image)
-// by manufacturer part number in a distributor's catalogue.
 package parts
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,6 +14,7 @@ import (
 
 // Part is what the catalogue knows about a component.
 type Part struct {
+	Supplier     string `json:"supplier"` // "Mouser", "DigiKey"
 	MPN          string `json:"mpn"`
 	Manufacturer string `json:"manufacturer"`
 	Description  string `json:"description"`
@@ -27,9 +25,6 @@ type Part struct {
 	ImageURL     string `json:"image_url"`
 	SupplierPart string `json:"supplier_part"`
 }
-
-// ErrNotFound means the catalogue has no part with that number.
-var ErrNotFound = errors.New("part not found")
 
 // Mouser uses the Mouser Search API (https://api.mouser.com), which needs a
 // free API key from a Mouser account (My Account → APIs → Search API).
@@ -60,6 +55,8 @@ type mouserResponse struct {
 		} `json:"Parts"`
 	} `json:"SearchResults"`
 }
+
+func (m *Mouser) Name() string { return "Mouser" }
 
 // Lookup finds mpn in Mouser's catalogue. Of several results it prefers the
 // one whose manufacturer part number is exactly mpn.
@@ -112,6 +109,7 @@ func (m *Mouser) Lookup(ctx context.Context, mpn string) (Part, error) {
 		}
 	}
 	part := Part{
+		Supplier:     "Mouser",
 		MPN:          best.ManufacturerPartNumber,
 		Manufacturer: best.Manufacturer,
 		Description:  strings.TrimSpace(best.Description),
@@ -132,13 +130,4 @@ func (m *Mouser) Lookup(ctx context.Context, mpn string) (Part, error) {
 		part.Package = Footprint(part.MPN, part.Description)
 	}
 	return part, nil
-}
-
-// httpURL keeps only absolute http(s) links.
-func httpURL(s string) string {
-	s = strings.TrimSpace(s)
-	if strings.HasPrefix(s, "https://") || strings.HasPrefix(s, "http://") {
-		return s
-	}
-	return ""
 }

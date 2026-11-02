@@ -35,12 +35,16 @@ export interface Meta {
   departments: Department[];
   symbology: Symbology;
   label_url: string;
-  /** Whether GET /api/parts (Mouser lookup) is set up on the server. */
+  /** Whether GET /api/parts (distributor lookup) is set up on the server. */
   part_lookup: boolean;
+  /** The distributors the lookup asks, in order, e.g. ["Mouser", "DigiKey"]. */
+  part_sources: string[];
 }
 
 /** What the distributor's catalogue knows about a part (GET /api/parts). */
 export interface PartInfo {
+  /** The distributor that answered: "Mouser", "DigiKey". */
+  supplier: string;
   mpn: string;
   manufacturer: string;
   description: string;

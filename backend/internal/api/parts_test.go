@@ -23,7 +23,7 @@ func TestPartLookupWithoutKey(t *testing.T) {
 	c.do("GET", "/api/parts?mpn=LM358P", nil, http.StatusServiceUnavailable, nil)
 }
 
-func TestPartImageOnlyFromMouser(t *testing.T) {
+func TestPartImageOnlyFromDistributors(t *testing.T) {
 	e := newEnv(t)
 	c := e.login("ana@portospaceteam.pt")
 	for _, u := range []string{
@@ -32,6 +32,11 @@ func TestPartImageOnlyFromMouser(t *testing.T) {
 		"https://mouser.com.evil.example/images/x.jpg", // look-alike host
 		"https://www.mouser.com/api/v1/x",              // not an image path
 		"https://127.0.0.1/images/x.jpg",
+		"https://www.mouser.com:8443/images/x.jpg",  // other port
+		"https://u@www.mouser.com/images/x.jpg",     // credentials
+		"https://mm.digikey.com.evil.example/x.jpg", // look-alike host
+		"https://www.digikey.com/en/products/x",     // not the image server
+		"https://mm.digikey.com/Volume0/",           // not a file
 	} {
 		c.do("GET", "/api/parts/image?url="+url.QueryEscape(u), nil, http.StatusBadRequest, nil)
 	}

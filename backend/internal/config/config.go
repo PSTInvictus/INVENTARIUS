@@ -41,22 +41,28 @@ type Config struct {
 	// Mouser Search API key, to fill in new items (description, datasheet,
 	// image) from a part number. "" turns the lookup off.
 	MouserAPIKey string
+	// DigiKey Product Information API app credentials (developer.digikey.com),
+	// for the same lookup. Both "" turns DigiKey off.
+	DigiKeyClientID     string
+	DigiKeyClientSecret string
 
 	SessionTTL time.Duration
 }
 
 func Load() (Config, error) {
 	c := Config{
-		Addr:               env("INVENTARIUS_ADDR", ":8080"),
-		DataDir:            env("INVENTARIUS_DATA_DIR", "./data"),
-		BaseURL:            strings.TrimRight(env("INVENTARIUS_BASE_URL", "http://localhost:8080"), "/"),
-		GoogleClientID:     os.Getenv("INVENTARIUS_GOOGLE_CLIENT_ID"),
-		GoogleClientSecret: os.Getenv("INVENTARIUS_GOOGLE_CLIENT_SECRET"),
-		AllowedDomain:      env("INVENTARIUS_ALLOWED_DOMAIN", "portospaceteam.pt"),
-		Printer:            os.Getenv("INVENTARIUS_PRINTER"),
-		Symbology:          env("INVENTARIUS_SYMBOLOGY", "datamatrix"),
-		MouserAPIKey:       strings.TrimSpace(os.Getenv("INVENTARIUS_MOUSER_API_KEY")),
-		SessionTTL:         30 * 24 * time.Hour,
+		Addr:                env("INVENTARIUS_ADDR", ":8080"),
+		DataDir:             env("INVENTARIUS_DATA_DIR", "./data"),
+		BaseURL:             strings.TrimRight(env("INVENTARIUS_BASE_URL", "http://localhost:8080"), "/"),
+		GoogleClientID:      os.Getenv("INVENTARIUS_GOOGLE_CLIENT_ID"),
+		GoogleClientSecret:  os.Getenv("INVENTARIUS_GOOGLE_CLIENT_SECRET"),
+		AllowedDomain:       env("INVENTARIUS_ALLOWED_DOMAIN", "portospaceteam.pt"),
+		Printer:             os.Getenv("INVENTARIUS_PRINTER"),
+		Symbology:           env("INVENTARIUS_SYMBOLOGY", "datamatrix"),
+		MouserAPIKey:        strings.TrimSpace(os.Getenv("INVENTARIUS_MOUSER_API_KEY")),
+		DigiKeyClientID:     strings.TrimSpace(os.Getenv("INVENTARIUS_DIGIKEY_CLIENT_ID")),
+		DigiKeyClientSecret: strings.TrimSpace(os.Getenv("INVENTARIUS_DIGIKEY_CLIENT_SECRET")),
+		SessionTTL:          30 * 24 * time.Hour,
 	}
 	c.LabelURL = strings.TrimRight(env("INVENTARIUS_LABEL_URL", c.BaseURL), "/")
 	for _, a := range strings.Split(os.Getenv("INVENTARIUS_ADMINS"), ",") {
@@ -78,6 +84,9 @@ func Load() (Config, error) {
 	case "datamatrix", "qr", "code128":
 	default:
 		return c, fmt.Errorf("INVENTARIUS_SYMBOLOGY: unknown %q", c.Symbology)
+	}
+	if (c.DigiKeyClientID == "") != (c.DigiKeyClientSecret == "") {
+		return c, fmt.Errorf("set both INVENTARIUS_DIGIKEY_CLIENT_ID and INVENTARIUS_DIGIKEY_CLIENT_SECRET, or neither")
 	}
 	if !c.DevAuth && c.GoogleClientID == "" {
 		return c, fmt.Errorf("no login method: set INVENTARIUS_GOOGLE_CLIENT_ID/SECRET, or INVENTARIUS_DEV_AUTH=1 for development")
