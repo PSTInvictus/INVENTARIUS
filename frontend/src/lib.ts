@@ -177,3 +177,73 @@ export function savePurpose(p: PurposeChoice) {
 export function errorMessage(e: unknown): string {
   return e instanceof ApiError ? serverText(e.message) : e instanceof Error ? e.message : String(e);
 }
+
+/** Lower case without accents, so "gaveta" finds "Gavetão" and "armario" finds "Armário". */
+export function fold(s: string): string {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
+/**
+ * Locations matching what was typed, best first. Every word must appear
+ * somewhere in the path ("lab gav 3" finds "Laboratório › Armário A › Gaveta 3"),
+ * and a label code such as "L12" finds that location. A typed word that is a
+ * whole word of the path counts more than the start of one, which counts more
+ * than a piece from the middle; matches in the place's own name count extra.
+ */
+export function matchLocations(paths: Map<number, string>, query: string): number[] {
+  const typed = fold(query)
+    .split(/[\s›>/]+/)
+    .filter(Boolean);
+  if (typed.length === 0) return [];
+  const byCode = typed.length === 1 ? /^l(\d+)$/.exec(typed[0]) : null;
+  const wordsOf = (s: string) =>
+    fold(s)
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter(Boolean);
+  const hits: { id: number; score: number; path: string }[] = [];
+  for (const [id, path] of paths) {
+    if (byCode && id === Number(byCode[1])) {
+      hits.push({ id, score: Number.POSITIVE_INFINITY, path });
+      continue;
+    }
+    const all = wordsOf(path);
+    const own = wordsOf(path.slice(path.lastIndexOf("›") + 1));
+    let score = 0;
+    for (const w of typed) {
+      const grade = (ws: string[]) =>
+        ws.includes(w) ? 3 : ws.some((x) => x.startsWith(w)) ? 2 : ws.some((x) => x.includes(w)) ? 1 : 0;
+      const s = grade(all);
+      if (s === 0) {
+        score = -1;
+        break;
+      }
+      score += s + (grade(own) > 0 ? 1 : 0);
+    }
+    if (score >= 0) hits.push({ id, score, path });
+  }
+  return hits
+    .sort((a, b) => b.score - a.score || a.path.localeCompare(b.path, undefined, { numeric: true }))
+    .map((h) => h.id);
+}
+
+// The locations picked last on this device, newest first.
+const RECENT_KEY = "inventarius.recentLocations";
+const RECENT_MAX = 6;
+
+export function recentLocations(): number[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
+    return Array.isArray(v) ? v.filter((x): x is number => typeof x === "number") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function rememberLocation(id: number) {
+  try {
+    const next = [id, ...recentLocations().filter((x) => x !== id)].slice(0, RECENT_MAX);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {
+    // storage unavailable
+  }
+}

@@ -5,6 +5,7 @@ import {
   Map as MapIcon,
   MapPin,
   MoreHorizontal,
+  PackagePlus,
   Pencil,
   Plus,
   Trash2,
@@ -13,6 +14,7 @@ import { type FormEvent, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, get, type LocationDetail, type Stock } from "../api";
 import { ActionSheet } from "../components/ActionSheet";
+import { AddHereSheet } from "../components/AddHere";
 import { LabelCard } from "../components/LabelCard";
 import { LocationSelect } from "../components/pickers";
 import {
@@ -44,6 +46,7 @@ export function LocationPage() {
   const { data: maps } = useMaps();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [stocking, setStocking] = useState(false);
   const [taking, setTaking] = useState<{ stock: Stock; name: string; unit: string; reserved: number } | null>(
     null,
   );
@@ -99,7 +102,10 @@ export function LocationPage() {
       }
       actions={
         <>
-          <Link className="btn btn-primary" to={`/items/new?location=${loc.id}`}>
+          <button type="button" className="btn btn-primary" onClick={() => setStocking(true)}>
+            <PackagePlus size={16} /> {t.loc.addHere}
+          </button>
+          <Link className="btn" to={`/items/new?location=${loc.id}`}>
             <Plus size={16} /> {t.loc.itemHere}
           </Link>
           <button type="button" className="btn" onClick={() => setAdding(true)}>
@@ -239,7 +245,10 @@ export function LocationPage() {
                 title={t.loc.empty}
                 action={
                   <div className="row" style={{ justifyContent: "center" }}>
-                    <Link className="btn btn-primary" to={`/items/new?location=${loc.id}`}>
+                    <button type="button" className="btn btn-primary" onClick={() => setStocking(true)}>
+                      <PackagePlus size={15} /> {t.loc.addHere}
+                    </button>
+                    <Link className="btn" to={`/items/new?location=${loc.id}`}>
                       <Plus size={15} /> {t.loc.itemHere}
                     </Link>
                     <button type="button" className="btn" onClick={() => setAdding(true)}>
@@ -261,6 +270,14 @@ export function LocationPage() {
         </div>
       </div>
 
+      {stocking && (
+        <AddHereSheet
+          open
+          onClose={() => setStocking(false)}
+          locationId={loc.id}
+          path={[...path.map((p) => p.name), loc.name].join(" › ")}
+        />
+      )}
       <NewLocationSheet open={adding} onClose={() => setAdding(false)} parentId={loc.id} />
       {editing && (
         <EditLocationSheet

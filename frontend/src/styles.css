@@ -2718,3 +2718,131 @@ dialog.sheet::backdrop {
 .map-pick-search {
   flex: none;
 }
+
+/* ------------------------------------------------------------- combobox */
+
+.combo {
+  position: relative;
+}
+
+.combo-box {
+  position: relative;
+}
+
+.combo-box input {
+  padding-right: 2rem;
+  text-overflow: ellipsis;
+}
+
+.combo-chevron {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+  transition: transform 0.12s;
+}
+
+.combo.open .combo-chevron {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+/* In the flow rather than floating, so it never ends up cut off inside a sheet. */
+.combo-list {
+  margin-top: 0.35rem;
+  max-height: min(300px, 45dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 0.3rem;
+}
+
+.combo-group {
+  padding: 0.45rem 0.6rem 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.combo-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.combo-item.active {
+  background: var(--accent-soft);
+}
+
+.combo-item.chosen .combo-title {
+  font-weight: 600;
+  color: var(--accent-ink);
+}
+
+.combo-item .row-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.combo-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.combo-title {
+  font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.combo-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.combo-empty {
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------- add stock here */
+
+.add-here-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.add-here-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.5rem auto;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.add-here-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.add-here-row .icon-btn {
+  margin-top: 0.35rem;
+}
