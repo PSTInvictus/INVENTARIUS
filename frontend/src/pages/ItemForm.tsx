@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, Plus, ScanLine } from "lucide-react";
+import { CheckCircle2, Download, Plus, ScanLine } from "lucide-react";
 import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
@@ -14,7 +14,7 @@ import {
 } from "../api";
 import { AddFields, type AddValues, addToItem, emptyAdd, wantsAdd } from "../components/AddStock";
 import { OrgSelect, ownerValue, parseOwnerValue } from "../components/pickers";
-import { ErrorBox, Loading, Page } from "../components/ui";
+import { ErrorBox, Loading, Page, useToast } from "../components/ui";
 import { useT } from "../i18n";
 import { errorMessage, isUnitKind, itemKinds, kindLabel, useMeta } from "../lib";
 import { categoryPaths } from "./ItemsPage";
@@ -85,6 +85,23 @@ function ItemForm({
     queryFn: () => get<Category[]>("/api/categories"),
   });
   const catPaths = useMemo(() => categoryPaths(categories.data), [categories.data]);
+  const blank = (keep?: Pick<typeof f, "kind" | "category_id" | "owner" | "unit">) => ({
+    name: "",
+    kind: keep?.kind ?? ("consumable" as ItemKind),
+    category_id: keep?.category_id ?? null,
+    description: "",
+    manufacturer: "",
+    mpn: "",
+    package: "",
+    label_text: "",
+    supplier_url: "",
+    datasheet_url: "",
+    unit: keep?.unit ?? "pcs",
+    min_stock: "",
+    hazard_class: "",
+    storage_notes: "",
+    owner: keep?.owner ?? "",
+  });
   const [f, setF] = useState({
     // A bag label has no description; the part number is a start for the name.
     name: item?.name ?? prefill?.mpn ?? "",
@@ -124,6 +141,11 @@ function ItemForm({
   const sources = (meta?.part_sources ?? []).join(" / ") || "Mouser";
   const [answeredBy, setAnsweredBy] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
+  // "Create and add another": the next item starts in the same place.
+  const another = useRef(false);
+  const nameInput = useRef<HTMLInputElement>(null);
+  const [made, setMade] = useState<{ id: number; name: string }[]>([]);
+  const toast = useToast();
 
   /**
    * Fills in what the distributors' catalogues know about the part number: fields
@@ -211,6 +233,8 @@ function ItemForm({
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    const next = another.current;
+    another.current = false;
     setError(null);
     setBusy(true);
     const { owner, ...fields } = f;
@@ -259,6 +283,23 @@ function ItemForm({
         }
       }
       qc.invalidateQueries();
+      if (!item && next) {
+        // A fresh form that keeps where things go and what kind they are.
+        setF((x) => blank(x));
+        setAdd((a) => ({ ...emptyAdd(a.location), countState: a.countState, print: a.print }));
+        setPhotoUrl("");
+        setAnsweredBy("");
+        setLookup(null);
+        setNewCat(null);
+        setMade((m) => [...m, { id: saved.id, name: saved.name }]);
+        toast(t.form.createdNext(saved.name));
+        // Drops a scanned bag's details from the address.
+        if (prefill)
+          navigate(add.location ? `/items/new?location=${add.location}` : "/items/new", { replace: true });
+        window.scrollTo({ top: 0 });
+        nameInput.current?.focus();
+        return;
+      }
       navigate(`/items/${saved.id}`, { replace: true });
     } catch (err) {
       setError(err);
@@ -282,6 +323,20 @@ function ItemForm({
           <span>{t.form.fromBag(prefill.mpn)}</span>
         </div>
       )}
+      {made.length > 0 && (
+        <div className="alert alert-ok" style={{ maxWidth: 920, marginBottom: "1rem" }}>
+          <CheckCircle2 size={16} />
+          <span>
+            {t.form.madeSoFar(made.length)}{" "}
+            {made.map((m, i) => (
+              <span key={m.id}>
+                {i > 0 && ", "}
+                <Link to={`/items/${m.id}`}>{m.name}</Link>
+              </span>
+            ))}
+          </span>
+        </div>
+      )}
       <form onSubmit={submit} className="card" style={{ maxWidth: 920 }}>
         <Section title={t.form.basics} hint={t.form.basicsHint}>
           <label className="field">
@@ -289,6 +344,7 @@ function ItemForm({
             <input
               value={f.name}
               onChange={(e) => set("name", e.target.value)}
+              ref={nameInput}
               required
               placeholder={t.form.namePh}
               autoFocus={!item}
@@ -514,6 +570,21 @@ function ItemForm({
           <Link to={item ? `/items/${item.id}` : "/items"} className="btn btn-ghost">
             {t.common.cancel}
           </Link>
+          {!item && (
+            // A plain button, so Enter in a field still means "Create item".
+            <button
+              type="button"
+              className="btn"
+              disabled={busy}
+              onClick={(e) => {
+                another.current = true;
+                e.currentTarget.form?.requestSubmit();
+              }}
+              title={t.form.createAnotherHint}
+            >
+              <Plus size={15} /> {t.form.createAnother}
+            </button>
+          )}
           <button type="submit" className="btn btn-primary" disabled={busy}>
             {busy ? t.common.saving : item ? t.form.saveChanges : t.form.createItem}
           </button>

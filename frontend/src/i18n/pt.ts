@@ -52,6 +52,9 @@ export const pt: Dict = {
     free: (a: number, b: number) => `${a}/${b} livres`,
     things: (n: number) => `${n} ${s(n, "coisa", "coisas")}`,
     nothingRoom: "Nada — é uma sala",
+    recentPlaces: "Recentes",
+    allPlaces: "Todos os locais",
+    noPlaceMatches: "Nenhum local corresponde. Tenta menos palavras, ou um código de etiqueta como L12.",
     chooseLocation: "Escolhe um local…",
     wholeProject: (p: string) => `${p} (projeto inteiro)`,
     pageNotFound: "Página não encontrada",
@@ -237,6 +240,11 @@ export const pt: Dict = {
     putSomeHint: "Opcional — também podes adicionar stock depois, na página do artigo.",
     saveChanges: "Guardar alterações",
     createItem: "Criar artigo",
+    createAnother: "Criar e adicionar outro",
+    createAnotherHint:
+      "Guarda este artigo e começa o próximo no mesmo local, com o mesmo tipo, categoria e dono.",
+    createdNext: (n: string) => `${n} criado. O próximo vai para o mesmo local.`,
+    madeSoFar: (n: number) => `${n} ${s(n, "artigo criado", "artigos criados")} até agora:`,
     stockNotAdded: (e: string) => `O artigo foi guardado, mas o stock não foi adicionado: ${e}`,
   },
 
@@ -354,6 +362,18 @@ export const pt: Dict = {
     deletePlace: "Apagar local",
     notEmpty: (places: number, things: number) =>
       `Esvazia-o primeiro: ainda tem ${[places && `${places} ${places === 1 ? "local" : "locais"}`, things && `${things} ${things === 1 ? "coisa" : "coisas"}`].filter(Boolean).join(" e ")}.`,
+    addHere: "Adicionar stock aqui",
+    addHereSubtitle: (p: string) => `Tudo vai para ${p}`,
+    findItem: "Procura um artigo…",
+    noItemMatches: "Nenhum artigo corresponde. Cria-o com “Artigo aqui”.",
+    amount: "Quantidade",
+    removeRow: "Remover",
+    addAll: (n: number) => (n ? `Adicionar ${n} ${s(n, "artigo", "artigos")}` : "Adicionar"),
+    nothingToAdd: "Escolhe pelo menos um artigo e a quantidade.",
+    addedHere: (n: number) => `${n} ${s(n, "artigo adicionado", "artigos adicionados")} aqui`,
+    someFailed: (n: number) =>
+      `${n} não ${n === 1 ? "foi adicionado" : "foram adicionados"}. Continuam na lista.`,
+    newItemHere: "Artigo aqui",
     deleted: (n: string) => `${n} apagado`,
   },
 
