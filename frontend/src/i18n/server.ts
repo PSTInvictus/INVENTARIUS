@@ -104,6 +104,8 @@ const exact: Record<string, string> = {
     'não se pode reservar "all" de um lote não contado; indica um número',
   "reserve whole units": "reserva unidades inteiras",
   // part lookup
+  "can't reach the distributors (no internet?): fill in the details by hand":
+    "Não foi possível contactar os distribuidores (sem internet?): preenche os dados à mão.",
   "part not found at the distributors": "Os distribuidores não conhecem esta referência.",
   "part lookup is not set up (INVENTARIUS_MOUSER_API_KEY or INVENTARIUS_DIGIKEY_CLIENT_ID/SECRET)":
     "A pesquisa de componentes não está configurada (INVENTARIUS_MOUSER_API_KEY ou INVENTARIUS_DIGIKEY_CLIENT_ID/SECRET).",
