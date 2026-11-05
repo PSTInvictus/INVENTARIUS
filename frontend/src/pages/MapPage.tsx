@@ -9,7 +9,6 @@ import {
   get,
   type Item,
   type ItemDetail,
-  type ItemSummary,
   type LocationDetail,
   type MapShape,
   type RoomMap,
@@ -31,13 +30,8 @@ import {
   useLocations,
 } from "../lib";
 import { lineage, linkedLocation, parseLink, shapeForLocation, shapesForItem, useMaps } from "../map";
+import { rankItems } from "../search";
 import { useLocationCounts } from "./LocationsPage";
-
-/** Matches an item by name, label text or part number. */
-function matches(it: ItemSummary, q: string) {
-  const f = q.trim().toLowerCase();
-  return !!f && [it.name, it.label_text, it.mpn, it.package].some((v) => v.toLowerCase().includes(f));
-}
 
 /**
  * The room map: what is where. ?m= picks the map, ?item= highlights where an
@@ -87,10 +81,7 @@ export function MapPage() {
     picked ?? (map && locParam ? (shapeForLocation(map.shapes, locs, locParam)?.id ?? null) : null);
   const selected = map?.shapes.find((s) => s.id === selectedId) ?? null;
 
-  const suggestions = useMemo(
-    () => (query.trim() ? (items ?? []).filter((it) => matches(it, query)).slice(0, 8) : []),
-    [items, query],
-  );
+  const suggestions = useMemo(() => rankItems(items ?? [], query).slice(0, 8), [items, query]);
 
   function setParam(changes: Record<string, string | null>) {
     const next = new URLSearchParams(params);
@@ -632,7 +623,7 @@ function PickItemSheet(props: { location: number; onClose: () => void }) {
   const t = useT();
   const list = useMemo(() => {
     const all = items ?? [];
-    return (query.trim() ? all.filter((it) => matches(it, query)) : all).slice(0, 30);
+    return (query.trim() ? rankItems(all, query) : all).slice(0, 30);
   }, [items, query]);
 
   if (item)

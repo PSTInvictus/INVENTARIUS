@@ -13,6 +13,7 @@ import {
 } from "./api";
 import { dict } from "./i18n";
 import { serverText } from "./i18n/server";
+import { stem, translations } from "./search";
 
 export const useMe = () => useQuery({ queryKey: ["me"], queryFn: () => get<User>("/api/me"), retry: false });
 
@@ -186,6 +187,7 @@ export function fold(s: string): string {
 /**
  * Locations matching what was typed, best first. Every word must appear
  * somewhere in the path ("lab gav 3" finds "Laboratório › Armário A › Gaveta 3"),
+ * in singular or plural, Portuguese or English ("drawer" finds "Gaveta 3"),
  * and a label code such as "L12" finds that location. A typed word that is a
  * whole word of the path counts more than the start of one, which counts more
  * than a piece from the middle; matches in the place's own name count extra.
@@ -210,8 +212,25 @@ export function matchLocations(paths: Map<number, string>, query: string): numbe
     const own = wordsOf(path.slice(path.lastIndexOf("›") + 1));
     let score = 0;
     for (const w of typed) {
-      const grade = (ws: string[]) =>
-        ws.includes(w) ? 3 : ws.some((x) => x.startsWith(w)) ? 2 : ws.some((x) => x.includes(w)) ? 1 : 0;
+      const sw = stem(w);
+      const others = translations(w);
+      const grade = (ws: string[]) => {
+        const g = ws.some((x) => x === w || stem(x) === sw)
+          ? 3
+          : ws.some((x) => x.startsWith(w))
+            ? 2
+            : ws.some((x) => x.includes(w))
+              ? 1
+              : 0;
+        if (g >= 2) return g;
+        // The same word in the other language ("drawer" for "Gaveta").
+        for (const o of others) {
+          const so = stem(o);
+          if (ws.some((x) => x === o || stem(x) === so)) return 2.5;
+          if (o.length >= 4 && ws.some((x) => x.startsWith(o))) return Math.max(g, 1.5);
+        }
+        return g;
+      };
       const s = grade(all);
       if (s === 0) {
         score = -1;

@@ -96,6 +96,7 @@ type Query struct {
 type alt struct {
 	parts  []string
 	factor float64 // < 1 for looser forms (split units, translations)
+	whole  bool    // must match a whole word, not just its start
 }
 
 // Parse prepares a query. A word that runs a number into a unit ("10kohm",
@@ -103,15 +104,17 @@ type alt struct {
 func Parse(q string) Query {
 	var query Query
 	for _, w := range Tokens(q) {
-		alts := []alt{{[]string{w}, 1}}
+		alts := []alt{{[]string{w}, 1, false}}
 		for i := 1; i < len(w); i++ {
 			left, right := w[:i], w[i:]
 			if hasDigit(left) && !hasDigit(right) {
-				alts = append(alts, alt{[]string{left, right}, 0.9})
+				alts = append(alts, alt{[]string{left, right}, 0.9, false})
 			}
 		}
+		// A short translation ("cap", "pot", "fan") must be a whole word,
+		// or "pot" would find "Potência" too.
 		for _, t := range translations(w) {
-			alts = append(alts, alt{[]string{t}, 0.95})
+			alts = append(alts, alt{[]string{t}, 0.95, len(t) < 4})
 		}
 		query.words = append(query.words, alts)
 	}
@@ -146,10 +149,10 @@ func NewDoc(fields ...Field) Doc {
 }
 
 // matchPart scores how well one query part matches the document: the same
-// word (singular or plural) 3, the start of a word 1, plus 0.5 when it is
+// word (singular or plural) 3, the start of a word 1 (unless whole), plus 0.5 when it is
 // the first word of the field (what the thing is: "Porca M6" over "Kit ...
 // e porcas"); weighted by field, 0 if nowhere.
-func (d Doc) matchPart(p string) float64 {
+func (d Doc) matchPart(p string, whole bool) float64 {
 	ps := Stem(p)
 	best := 0.0
 	for i, ts := range d.fields {
@@ -158,6 +161,7 @@ func (d Doc) matchPart(p string) float64 {
 			switch {
 			case t.word == p, t.stem == ps:
 				s = 3
+			case whole:
 			case strings.HasPrefix(t.word, p), strings.HasPrefix(t.stem, ps):
 				s = 1
 			}
@@ -180,7 +184,7 @@ func (q Query) Score(d Doc) (float64, bool) {
 		for _, a := range alts {
 			s := 0.0
 			for _, p := range a.parts {
-				ps := d.matchPart(p)
+				ps := d.matchPart(p, a.whole)
 				if ps == 0 {
 					s = 0
 					break
