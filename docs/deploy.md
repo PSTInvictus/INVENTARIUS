@@ -75,6 +75,10 @@ stock, printing and backups. Only these need internet:
 Phones still need a network shared with the PC, even one with no internet. The PC's address changes
 with the network: `ip -4 addr` shows it.
 
+If the page stops answering on a phone but works at http://localhost:8080 on the PC, the app is fine
+and the problem is the network: the PC may have moved to another Wi-Fi, which changes its address. A
+network cable or a fixed connection avoids this.
+
 ## Configuration
 
 All settings are `INVENTARIUS_*` environment variables in `.env`; `env.example` documents them.
