@@ -10,8 +10,7 @@ const exact: Record<string, string> = {
   "no such endpoint": "Endereço inexistente.",
   "invalid reference or value": "Referência ou valor inválido.",
   "internal error": "Erro interno do servidor.",
-  "can't reach the server: check this device is on the same network as the PC":
-    "Não foi possível contactar o servidor: confirma que este dispositivo está na mesma rede que o PC.",
+  "check this device is on the same network as the PC": "Confirma que este dispositivo está na mesma rede que o PC.",
   "name is required": "O nome é obrigatório.",
   "only its owners can change this": "Só os donos podem alterar isto.",
   "only its department, the person who reserved it, or an admin can release it":

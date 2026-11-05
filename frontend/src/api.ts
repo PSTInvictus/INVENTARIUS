@@ -325,7 +325,7 @@ export async function api<T = void>(method: string, path: string, body?: unknown
   try {
     res = await fetch(path, init);
   } catch {
-    throw new ApiError(503, "can't reach the server: check this device is on the same network as the PC");
+    throw new ApiError(503, "check this device is on the same network as the PC");
   }
   if (!res.ok) {
     let msg = res.statusText;
