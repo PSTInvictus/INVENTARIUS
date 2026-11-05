@@ -1,6 +1,7 @@
 package search
 
 import (
+	"os"
 	"reflect"
 	"testing"
 )
@@ -125,5 +126,76 @@ func TestStem(t *testing.T) {
 		if got := Stem(in); got != want {
 			t.Errorf("Stem(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+// A mixed catalogue, named partly in English and partly in Portuguese.
+func TestBilingual(t *testing.T) {
+	names := []string{
+		"Screw M3x8",
+		"Chave de fendas PH1",
+		"Alicate de corte",
+		"Soldering iron",
+		"Fita isoladora",
+		"Ventoinha 40 mm",
+		"Potência 500 W",
+		"Gaveta 3",
+		"Heatshrink 3 mm",
+		"Válvula de esfera",
+		"Rolamento 608",
+	}
+	docs := make([]Doc, len(names))
+	for i, n := range names {
+		docs[i] = NewDoc(Field{n, 3})
+	}
+	find := func(q string) []string {
+		var out []string
+		for _, i := range Rank(Parse(q), docs) {
+			out = append(out, names[i])
+		}
+		return out
+	}
+	for q, want := range map[string][]string{
+		"parafuso":       {"Screw M3x8"},
+		"parafusos m3":   {"Screw M3x8"},
+		"screwdriver":    {"Chave de fendas PH1"},
+		"pliers":         {"Alicate de corte"},
+		"solda":          {"Soldering iron"},
+		"ferro de solda": nil, // "de" is in no English name
+		"tape":           {"Fita isoladora"},
+		"fan":            {"Ventoinha 40 mm"},
+		"potenciometro":  nil, // its short translation "pot" is a whole word: not "Potência"
+		"power":          {"Potência 500 W"},
+		"drawer":         {"Gaveta 3"},
+		"termoretratil":  {"Heatshrink 3 mm"},
+		"valve":          {"Válvula de esfera"},
+		"bearings":       {"Rolamento 608"},
+		"VÁLVULAS":       {"Válvula de esfera"},
+	} {
+		if got := find(q); !reflect.DeepEqual(got, want) {
+			t.Errorf("%q found %q, want %q", q, got, want)
+		}
+	}
+}
+
+func TestTranslationsOnce(t *testing.T) {
+	got := translations("solder")
+	seen := map[string]bool{}
+	for _, w := range got {
+		if seen[w] || w == "solder" {
+			t.Fatalf("translations(solder) = %q: repeats or includes itself", got)
+		}
+		seen[w] = true
+	}
+}
+
+// The frontend filters lists on the device with the same words.
+func TestFrontendSynonymsInSync(t *testing.T) {
+	front, err := os.ReadFile("../../../frontend/src/synonyms.txt")
+	if err != nil {
+		t.Skip("frontend not checked out:", err)
+	}
+	if string(front) != synonymGroups {
+		t.Fatal("frontend/src/synonyms.txt differs from backend/internal/search/synonyms.txt: copy one over the other")
 	}
 }

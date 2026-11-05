@@ -86,6 +86,12 @@ describe("matchLocations", () => {
     // "a" is a whole word of Armário A, so its drawers come first.
     expect(matchLocations(paths, "a gav")).toEqual([3, 4]);
   });
+  it("matches plurals and the other language", () => {
+    expect(matchLocations(paths, "gavetas")).toEqual([3, 4]);
+    expect(matchLocations(paths, "drawer 3")).toEqual([3]);
+    expect(matchLocations(paths, "workshop")).toEqual([5, 6]);
+    expect(matchLocations(paths, "cabinet")).toEqual([2, 3, 4]);
+  });
   it("finds a label code", () => {
     expect(matchLocations(paths, "L6")).toEqual([6]);
     expect(matchLocations(paths, "")).toEqual([]);

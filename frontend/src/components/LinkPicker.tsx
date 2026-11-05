@@ -5,6 +5,7 @@ import { useT } from "../i18n";
 import { itemTitle, locationPaths, statusLabel, stockQty, useAllItems, useLocations } from "../lib";
 import { type LinkKind, parseLink } from "../map";
 import { categoryPaths } from "../pages/ItemsPage";
+import { rankItems } from "../search";
 import { LocationSelect } from "./pickers";
 
 const linkKinds: LinkKind[] = ["L", "I", "S", "A", "C"];
@@ -80,15 +81,13 @@ function ItemPick(props: { value: number | null; onChange: (id: number | null) =
   const [filter, setFilter] = useState("");
   const t = useT();
   const shown = useMemo(() => {
-    const f = filter.trim().toLowerCase();
     const all = items ?? [];
-    const hits = f
-      ? all.filter((it) => [it.name, it.mpn, it.label_text].some((v) => v.toLowerCase().includes(f)))
-      : all;
-    const out = hits.slice(0, 100);
+    const searching = filter.trim() !== "";
+    const out = (searching ? rankItems(all, filter) : all).slice(0, 100);
     const cur = all.find((it) => it.id === props.value);
     if (cur && !out.includes(cur)) out.unshift(cur);
-    return out.sort((a, b) => a.name.localeCompare(b.name));
+    // Best matches first while searching; otherwise by name.
+    return searching ? out : out.sort((a, b) => a.name.localeCompare(b.name));
   }, [items, filter, props.value]);
   return (
     <>

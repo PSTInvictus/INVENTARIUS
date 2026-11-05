@@ -14,6 +14,7 @@ import {
   useLocations,
   useMeta,
 } from "../lib";
+import { rankItems } from "../search";
 import { Combobox, type ComboEntry } from "./Combobox";
 import { ItemIcon, PlaceIcon } from "./ui";
 
@@ -153,13 +154,11 @@ export function ItemSelect(props: {
   function entries(q: string): ComboEntry[] {
     const words = fold(q).split(/\s+/).filter(Boolean);
     const code = words.length === 1 ? /^i(\d+)$/.exec(words[0]) : null;
-    const hits = words.length
-      ? sorted.filter((it) => {
-          if (code) return it.id === Number(code[1]);
-          const hay = fold([it.name, it.package, it.mpn, it.label_text, it.manufacturer].join(" "));
-          return words.every((w) => hay.includes(w));
-        })
-      : sorted;
+    const hits = code
+      ? sorted.filter((it) => it.id === Number(code[1]))
+      : words.length
+        ? rankItems(sorted, q)
+        : sorted;
     return hits.slice(0, 60).map((it) => ({
       id: it.id,
       title: itemTitle(it),

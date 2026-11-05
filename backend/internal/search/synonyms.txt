@@ -1,0 +1,233 @@
+# Words that mean the same thing, so people can search in Portuguese or
+# English ("capacitor" finds "Condensador", "parafuso" finds "Screw M3").
+# One group per line, written in lower case without accents; plurals are
+# handled by the search itself. A word may appear in more than one group.
+#
+# The frontend keeps an identical copy in frontend/src/synonyms.txt (a test
+# checks they match): edit both.
+
+# Electronics
+eletronica electronica electronics electronic
+resistencia resistor
+condensador capacitor cap
+indutor inductor bobina coil
+indutancia inductance
+diodo diode
+transistor transistor
+cristal crystal
+oscilador oscillator
+conector connector ficha plug
+tomada socket outlet
+terminal crimp
+interruptor switch comutador
+botao button
+rele relay
+fusivel fuse
+amplificador amplifier ampop opamp
+conversor converter
+regulador regulator
+transformador transformer
+memoria memory
+filtro filter
+blindagem shield
+microcontrolador microcontroller mcu
+processador processor
+circuito circuit
+integrado integrated ic
+antena antenna
+altifalante speaker
+microfone microphone mic
+ecra screen display
+ventoinha fan ventilador
+dissipador heatsink
+potenciometro potentiometer pot
+alimentacao supply power
+fonte supply source
+carregador charger
+bateria battery pilha
+celula cell
+tensao voltage
+corrente current
+potencia power
+frequencia frequency
+sinal signal
+placa board plate pcb
+protoboard breadboard
+modulo module
+porta gate door port
+logica logic
+pino pin
+cabeca head
+sensor sensor
+pressao pressure
+temperatura temperature
+humidade humidity
+acelerometro accelerometer
+giroscopio gyroscope gyro
+barometro barometer
+avionica avionics
+telemetria telemetry
+radio radio
+camara camera chamber
+computador computer
+portatil laptop
+teclado keyboard
+rato mouse
+cartao card
+adaptador adapter adaptor
+extensao extension
+ligacao connection link
+soldadura soldering solder
+solda solder
+estanho tin solder
+multimetro multimeter
+osciloscopio oscilloscope
+gerador generator
+
+# Tools and lab
+ferramenta tool
+equipamento equipment
+maquina machine
+alicate pliers
+chave key wrench spanner
+fenda screwdriver
+desaparafusador screwdriver
+martelo hammer
+serra saw
+broca drill
+berbequim drill
+lixa sandpaper
+tesoura scissors
+faca knife
+regua ruler
+paquimetro caliper
+medidor meter gauge
+balanca scale
+termometro thermometer
+pinca tweezers
+lupa magnifier
+luva glove
+oculos goggles glasses
+mascara mask
+extintor extinguisher
+fita tape
+isolante insulating insulation
+termoretratil heatshrink
+retratil shrink
+abracadeira clamp tie
+grampo clamp staple
+costura sewing
+agulha needle
+
+# Mechanical
+mecanica mechanical
+estrutura structure frame
+fixacao fastener
+parafuso screw bolt
+porca nut
+anilha washer
+rebite rivet
+mola spring
+eixo shaft axle
+rolamento bearing
+engrenagem gear
+correia belt
+roldana pulley polia
+roda wheel
+dobradica hinge
+iman magnet
+guincho winch
+mosquetao carabiner
+suporte support mount bracket holder
+
+# Rocket and propulsion
+foguete rocket
+propulsao propulsion
+motor motor engine
+combustivel fuel
+oxidante oxidizer oxidiser
+combustao combustion
+bocal nozzle tubeira
+tanque tank
+garrafa bottle
+cilindro cylinder
+valvula valve
+manometro gauge manometer
+tubo tube pipe
+mangueira hose
+recuperacao recovery
+paraquedas parachute chute
+polvora powder
+cartucho cartridge
+ignicao ignition
+ignitor igniter ignitor
+perigoso hazardous
+
+# Materials
+material material
+fio wire thread
+cabo cable
+corda rope cord
+perfil profile extrusion
+chapa sheet plate
+barra bar rod
+varao rod
+aluminio aluminium aluminum
+aco steel
+inox stainless
+cobre copper
+latao brass
+ferro iron
+madeira wood
+plastico plastic
+borracha rubber
+espuma foam
+fibra fiber fibre
+carbono carbon
+vidro glass
+tecido fabric cloth
+cola glue adhesive adesivo
+resina resin epoxy
+tinta paint ink
+solvente solvent
+alcool alcohol
+oleo oil
+lubrificante lubricant
+acido acid
+quimico chemical
+
+# Places and storage
+jaula cage
+janela window
+gaveta drawer
+caixa box case
+prateleira shelf
+estante rack shelving
+armario cabinet cupboard locker
+bancada bench workbench
+mesa table desk
+sala room
+parede wall
+chao floor
+teto ceiling
+saco bag
+cesto basket bin
+contentor container
+laboratorio lab laboratory
+oficina workshop
+armazem storage warehouse
+
+# Colours and sizes
+preto preta black
+vermelho vermelha red
+amarelo amarela yellow
+azul blue
+verde green
+branco branca white
+rosa pink
+cinzento cinzenta cinza grey gray
+laranja orange
+castanho castanha brown
+roxo roxa purple
+grande big large
+pequeno pequena small

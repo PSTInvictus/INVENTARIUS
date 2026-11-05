@@ -15,6 +15,7 @@ import { LocationSelect } from "../components/pickers";
 import { Card, Empty, ErrorBox, Loading, Page, Sheet } from "../components/ui";
 import { useT } from "../i18n";
 import { useLocations } from "../lib";
+import { rank } from "../search";
 
 interface Count {
   id: number;
@@ -58,18 +59,16 @@ export function LocationsPage() {
 
   // Places matching the filter, plus their ancestors so they stay visible.
   const visible = useMemo(() => {
-    const f = filter.trim().toLowerCase();
-    if (!f || !locs) return null;
+    if (!filter.trim() || !locs) return null;
     const byId = new Map(locs.map((l) => [l.id, l]));
     const keep = new Set<number>();
-    for (const l of locs)
-      if (l.name.toLowerCase().includes(f))
-        for (
-          let p: Location | undefined = l, d = 0;
-          p && d < 32;
-          p = p.parent_id ? byId.get(p.parent_id) : undefined, d++
-        )
-          keep.add(p.id);
+    for (const l of rank(locs, filter, (l) => [{ text: l.name, weight: 1 }]))
+      for (
+        let p: Location | undefined = l, d = 0;
+        p && d < 32;
+        p = p.parent_id ? byId.get(p.parent_id) : undefined, d++
+      )
+        keep.add(p.id);
     return keep;
   }, [filter, locs]);
 
